@@ -4,122 +4,211 @@
 
 #include "core/variant.h"
 #include "reference.h"
+#include "core/print_string.h"
 
 #include "thirdparty/mbedtls/include/mbedtls/gcm.h"
 #include "thirdparty/mbedtls/include/mbedtls/aes.h"
 
-
-void cripter::_bind_methods()
-{
-	ClassDB::bind_method(D_METHOD("encrypt_byte_aes_cbc", "PoolByteArray", "key"),&cripter::encrypt_byte_aes_cbc);
-	ClassDB::bind_method(D_METHOD("decrypt_byte_aes_cbc", "PoolByteArray", "key"),&cripter::decrypt_byte_aes_cbc);
-
-	//ClassDB::bind_method(D_METHOD("encrypt_var_aes_cbc", "Var", "key"),&cripter::encrypt_var_aes_cbc);
-	//ClassDB::bind_method(D_METHOD("decrypt_var_aes_cbc", "PoolByteArray", "key"),&cripter::decrypt_var_aes_cbc);
-}
-
-cripter::cripter() {
-}
+#include "thirdparty/mbedtls/include/mbedtls/cipher.h"
+#include <stdint.h>
 
 
-PoolByteArray cripter::decrypt_byte_aes_cbc(PoolByteArray p_mati, String p_key)
-{
-	//Prepare key & iv
+
+Array cripter::encrypt_byte_aes_gcm(const PoolByteArray p_input, const String p_key, const String p_add) const {
+
+	//Prepare key & iv **
 	String h_key = p_key.md5_text();
-	uint8_t input_key[32];
+	uint8_t key[32];
 	uint8_t iv[16];
 	for (int i = 0; i < 32; i++) {
-		input_key[i] = h_key[i];
+		key[i] = h_key[i];
 		if (i % 2 == 0){
-			iv[i] = input_key[i];	
+			iv[i] = key[i];	
+		}
+	}
+	
+	//Preparing buffer ** Input
+	int data_len = p_input.size();
+	int extra_len;
+	int total_len;
+
+	if (data_len % 16 != 0) { 
+		extra_len = (16 - (data_len % 16));    
+		total_len = data_len + extra_len ;   
+	} else { 
+		total_len = data_len;
+		extra_len = 0; 
+	}
+	uint8_t input[total_len];
+	uint8_t output[total_len];	
+		
+	for (int g = 0; g < data_len; g++){   
+		input[g] = p_input[g];
+	}
+	for (int l = data_len; l < total_len; l++){  //fill with zeros   
+		input[l] = 0;
+	}
+
+	// Additional data
+	int add_len = p_add.size();
+	uint8_t add[add_len];
+		
+	for (int g = 0; g < add_len; g++){   
+		add[g] = p_add[g];
+	}
+
+	// Tag
+	uint8_t tag[16];
+	
+	
+	
+	
+	//Encryptation **
+	//mbedtls_gcm_self_test << Add to error verifications
+	mbedtls_gcm_context ctx;
+	mbedtls_gcm_init( &ctx );
+	mbedtls_gcm_setkey(&ctx, MBEDTLS_CIPHER_ID_AES , key, 256);
+	mbedtls_gcm_crypt_and_tag( &ctx, MBEDTLS_GCM_ENCRYPT, data_len, iv, 16, add, add_len, input,  output, 16, tag);
+	mbedtls_gcm_free( &ctx );
+	
+	//Fit data ** 
+		
+	//Output
+	PoolByteArray out_ret;
+	for (int i = 0; i < sizeof(output); i++){
+		out_ret.push_back(output[i]);
+	}
+	out_ret.push_back(extra_len);
+	
+	//Tag
+	PoolByteArray out_tag;
+	for (int i = 0; i < sizeof(tag); i++){
+		out_tag.push_back(tag[i]);
+	}
+	out_tag.push_back( (int)sizeof(tag) );
+	
+	//Array with Output and Tag
+	Array ret;
+	ret.push_back(out_ret);
+	ret.push_back(out_tag);
+	return ret;
+	
+
+
+}
+
+
+PoolByteArray cripter::decrypt_byte_aes_cbc(const PoolByteArray p_input, const String p_key) const {
+
+	//Prepare key & iv **
+	String h_key = p_key.md5_text();
+	uint8_t key[32];
+	uint8_t iv[16];
+	for (int i = 0; i < 32; i++) {
+		key[i] = h_key[i];
+		if (i % 2 == 0){
+			iv[i] = key[i];	
 		}
 	}
 
-	//Preparing buffer 
-	int data_size = p_mati.size() - 1;
-	int zero_size = p_mati[data_size];
-	uint8_t arr_buf[data_size];	
-		
-	for (int g = 0; g < data_size; g++){   
-		arr_buf[g] = p_mati[g];
+	//Preparing buffer **
+	int data_len = p_input.size() - 1;
+	int zeros = p_input[data_len];
+	uint8_t input[data_len];	
+	uint8_t output[data_len];
+			
+	for (int g = 0; g < data_len; g++){   
+		input[g] = p_input[g];
 	}
 	
-	//Decryptation
-	uint8_t output_buff[data_size];
-	
+	//Decryptation **
 	mbedtls_aes_context ctx;
 	mbedtls_aes_init( &ctx );
-	mbedtls_aes_setkey_dec(&ctx, input_key, 256);
-	mbedtls_aes_crypt_cbc( &ctx, MBEDTLS_AES_DECRYPT, data_size, iv, arr_buf, output_buff);
+	mbedtls_aes_setkey_dec(&ctx, key, 256);
+	mbedtls_aes_crypt_cbc( &ctx, MBEDTLS_AES_DECRYPT, data_len, iv, input, output);
 	mbedtls_aes_free( &ctx );
 
-	//Fit data	
+	//Fit data **
 	PoolByteArray retu;
-	for (int i = 0; i < (sizeof(output_buff) - zero_size); i++){    //No more extra zeros here
-		retu.push_back(output_buff[i]);
+	for (int i = 0; i < (sizeof(output) - zeros); i++){    //No more extra zeros here
+		retu.push_back(output[i]);
 	}
 
 	return retu;
 }	
 
 
+PoolByteArray cripter::encrypt_byte_aes_cbc(const PoolByteArray p_input, const String p_key) const {
 
-PoolByteArray cripter::encrypt_byte_aes_cbc( PoolByteArray p_pool,  String p_key) {
-
-	//Prepare key & iv
+	//Prepare key & iv **
 	String h_key = p_key.md5_text();
-	uint8_t input_key[32];
+	uint8_t key[32];
 	uint8_t iv[16];
 	for (int i = 0; i < 32; i++) {
-		input_key[i] = h_key[i];
+		key[i] = h_key[i];
 		if (i % 2 == 0){
-			iv[i] = input_key[i];	
+			iv[i] = key[i];	
 		}
 	}
 
+	//Preparing buffer **
 	//About sizes
-	int data_size = p_pool.size();
-	int extra_size;
-	int total_size;
+	int data_len = p_input.size();
+	int extra_len;
+	int total_len;
 
-	if (data_size % 16 != 0) { 
-		extra_size = (16 - (data_size % 16));    
-		total_size = data_size + extra_size ;   
+	if (data_len % 16 != 0) { 
+		extra_len = (16 - (data_len % 16));    
+		total_len = data_len + extra_len ;   
 	} else { 
-		total_size = data_size;
-		extra_size = 0; 
+		total_len = data_len;
+		extra_len = 0; 
 	}
 	
-	//Preparing buffer 
-	uint8_t in_buffer[total_size];
 
-	for (int g = 0; g < data_size; g++){   
-		in_buffer[g] = p_pool[g];
+	uint8_t input[total_len];
+	uint8_t output[sizeof(input)];
+	for (int g = 0; g < data_len; g++){   
+		input[g] = p_input[g];
+	}
+	for (int l = data_len; l < total_len; l++){  //fill with zeros   
+		input[l] = 0;
 	}
 
-	for (int l = data_size; l < total_size; l++){  //fill with zeros   
-		in_buffer[l] = 0;
-	}
-		
-	//Encryptation
-	uint8_t OutputMessage[sizeof(in_buffer)];
-		
+	
+	//Encryptation **
 	mbedtls_aes_context ctx;
 	mbedtls_aes_init( &ctx );
-	mbedtls_aes_setkey_enc( &ctx, input_key, 256 );
-	mbedtls_aes_crypt_cbc( &ctx, MBEDTLS_AES_ENCRYPT, total_size, iv, in_buffer, OutputMessage );
+	mbedtls_aes_setkey_enc( &ctx, key, 256 );
+	mbedtls_aes_crypt_cbc( &ctx, MBEDTLS_AES_ENCRYPT, total_len, iv, input, output );
 	mbedtls_aes_free( &ctx );
 
-	//Fit data	
-	PoolByteArray back_out;
-	for (int i = 0; i < sizeof(OutputMessage); i++){
-		back_out.push_back(OutputMessage[i]);
+
+	//Fit data **
+	PoolByteArray ret;
+	for (int i = 0; i < sizeof(output); i++){
+		ret.push_back(output[i]);
 	}
-	
-	back_out.push_back(extra_size);
-	return back_out;
+	ret.push_back(extra_len);
+	return ret;
 	
 }
 
 
+void cripter::_bind_methods(){
+
+	//CBC
+	ClassDB::bind_method(D_METHOD("encrypt_byte_aes_cbc", "ByteArray", "key"),&cripter::encrypt_byte_aes_cbc);
+	ClassDB::bind_method(D_METHOD("decrypt_byte_aes_cbc", "ByteArray", "key"),&cripter::decrypt_byte_aes_cbc);
+	
+	//GCM
+	ClassDB::bind_method(D_METHOD("encrypt_byte_aes_gcm", "ByteArray", "key", "Additional Data"),&cripter::encrypt_byte_aes_gcm);
+	//ClassDB::bind_method(D_METHOD("decrypt_byte_aes_gcm", "ByteArray", "key"),&cripter::decrypt_byte_aes_gcm);
+	
+}
+
+
+cripter::cripter(){
+	
+}
 
