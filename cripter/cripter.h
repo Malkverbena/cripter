@@ -25,6 +25,7 @@ class cripter : public Reference {
 protected:
 
 	//struct crip_err {	}
+	//Fiz the way as vectors are accessed
 
 	static void _bind_methods();
 	
