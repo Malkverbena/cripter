@@ -2,15 +2,6 @@
 
 #include "cripter.h"
 
-//#include "core/variant.h"
-//#include "reference.h"
-
-//#include "thirdparty/mbedtls/include/mbedtls/gcm.h"
-//#include "thirdparty/mbedtls/include/mbedtls/aes.h"
-
-//#include <cstdio>
-//#include <iostream>
-
 #define KEY_SIZE   32
 #define EXT_SIZE   16
 
@@ -324,3 +315,4 @@ cripter::cripter(){
 	
 }
 
+/*cripter.cpp*/

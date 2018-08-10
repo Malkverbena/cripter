@@ -11,18 +11,16 @@
 		Streaming 
 		RSA
 		Check the right way to access to vetors 
-		Function to Errors
+		Errors
 		Keep c++98
 		rewrite the bad code(awake and with coffee this time...)
 		
 */
 
 
-#include "core/ustring.h"
-#include "reference.h"
-//#include "core/variant.h"
-#include "core/io/marshalls.h"
 
+#include "reference.h"
+#include "core/io/marshalls.h"
 
 #include "thirdparty/mbedtls/include/mbedtls/gcm.h"
 #include "thirdparty/mbedtls/include/mbedtls/aes.h"
@@ -72,5 +70,5 @@ public:
 };
 
 
-#endif
+#endif /*cripter.h*/
 
