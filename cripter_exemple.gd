@@ -12,7 +12,7 @@ func _ready():
 	var gcm_input = var2bytes("the cow goes muuuu")
 	var cbc_input = var2bytes("The cat goes mewwwww")
 	
-	var gcm_var = [234, "ub", {"k":34, "revt":"3e4r", "kjh":Vector2(3,5) }, true, Color(1.4,2.3,3.2,4.1)]
+	var gcm_var = [234, "ub", {"k":34, "revt":"3e4r", "kjh":Vector3(70,3,5) }, true, Color(1.4,2.3,3.2,4.1)]
 	var cbc_var = {"cxv":[345,"vgdf", Vector2(7,0)], "xcv":"6546", "123dfg":5.96}
 	
 	
