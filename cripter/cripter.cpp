@@ -20,14 +20,6 @@
 //Testar os dados do add_data e Tag
 
 
-PoolByteArray cripter::encrypt_var_aes_CBC(const Variant p_input, const String p_key) const {
-
-	return encrypt_byte_aes_CBC((encode_var(p_input)), p_key);	
-}
-
-
-
-
 Array cripter::encrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add) const {
 
     //Prepare key & iv **
@@ -245,6 +237,25 @@ PoolByteArray cripter::decrypt_byte_aes_CBC(const PoolByteArray p_input, const S
 }
 
 
+PoolByteArray cripter::encrypt_var_aes_CBC(const Variant p_input, const String p_key) const {
+
+	return encrypt_byte_aes_CBC((encode_var(p_input)), p_key);	
+}
+
+Array cripter::encrypt_var_aes_GCM(const Variant p_input, const String p_key, const String p_add) const {
+
+	return encrypt_byte_aes_GCM((encode_var(p_input)), p_key, p_add);
+}
+
+Variant cripter::decrypt_var_aes_CBC(const PoolByteArray p_input, const String p_key) const{
+
+	return decode_var((decrypt_byte_aes_CBC(p_input, p_key)));
+}
+
+Variant cripter::decrypt_var_aes_GCM(const PoolByteArray p_input, const String p_key, const PoolByteArray p_tag, const String p_add) const {
+
+	return decode_var(decrypt_byte_aes_GCM(p_input, p_key, p_tag, p_add));
+}
 
     
 PoolByteArray cripter::char2pool(const uint8_t *p_in, size_t p_size)const {
@@ -300,12 +311,15 @@ void cripter::_bind_methods(){
 	ClassDB::bind_method(D_METHOD("decrypt_byte_aes_CBC", "Data to decrypt", "key"),&cripter::decrypt_byte_aes_CBC);
 	
 	ClassDB::bind_method(D_METHOD("encrypt_var_aes_CBC", "Data to encrypt", "key"),&cripter::encrypt_var_aes_CBC);
-
+	ClassDB::bind_method(D_METHOD("decrypt_var_aes_CBC", "Data to decrypt", "key"),&cripter::decrypt_var_aes_CBC);
 	
 	
 	//GCM
 	ClassDB::bind_method(D_METHOD("encrypt_byte_aes_GCM", "Data to encrypt", "key", "Additional Data"),&cripter::encrypt_byte_aes_GCM);
 	ClassDB::bind_method(D_METHOD("decrypt_byte_aes_GCM", "Data to decrypt", "key", "Tag", "Additional Data"),&cripter::decrypt_byte_aes_GCM);
+	
+	ClassDB::bind_method(D_METHOD("encrypt_var_aes_GCM", "Data to encrypt", "key"),&cripter::encrypt_var_aes_GCM);
+	ClassDB::bind_method(D_METHOD("decrypt_var_aes_GCM", "Data to decrypt", "key", "Tag", "Additional Data"),&cripter::decrypt_var_aes_GCM);
 	
 }
 
