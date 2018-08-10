@@ -3,6 +3,19 @@
 #ifndef CRIPTER_H
 #define CRIPTER_H
 
+/*
+	To Do:
+		CBC - GCM
+		Encode/Decote Variant to encrypt var function
+		Add Entropy
+		Streaming 
+		RSA
+		Check the right way to access to vetors 
+		Function to Errors
+		Keep c++98
+		rewrite the bad code(awake and with coffee this time...)
+		
+*/
 
 
 #include "core/ustring.h"
@@ -18,33 +31,42 @@
 class cripter : public Reference {
 	GDCLASS(cripter,Reference);
 	
+private:
 
-//private:
+	//struct cripter_err {	}
+	
+
+	//PoolByteArray encode_var(const Variant p_data) const;
+	//Variant decode_var(const PoolByteArray p_data) const;
+	
+	PoolByteArray char2pool(const uint8_t *p_in, size_t p_size) const;
+	//void pool2char() const;
 
 
 protected:
 
-	//struct crip_err {	}
-	//Fix the way as vectors are accessed
-
 	static void _bind_methods();
 	
-	//PoolByteArray encode_var(const Variant p_data) const;
-	//Variant decode_var(const PoolByteArray p_data) const;
-
-		
+	PoolByteArray encode_var(const Variant p_data) const;
+	Variant decode_var(const PoolByteArray p_data) const;
+			
 public:
 	//CBC
-	PoolByteArray encrypt_byte_aes_cbc(const PoolByteArray p_input,const String p_key)const;
-	PoolByteArray decrypt_byte_aes_cbc(const PoolByteArray p_input,const String p_key)const;
+	PoolByteArray encrypt_byte_aes_CBC(const PoolByteArray p_input, const String p_key) const;
+	PoolByteArray decrypt_byte_aes_CBC(const PoolByteArray p_input, const String p_key) const;
+	
+	PoolByteArray encrypt_var_aes_CBC(const Variant p_input, const String p_key) const;
+
+	
 	
 	//GCM
-	Array encrypt_byte_aes_gcm(const PoolByteArray p_input,const String p_key, const String p_add = "")const;
-	//PoolByteArray decrypt_byte_aes_gcm(const PoolByteArray p_input, const String p_key, const PoolByteArray p_tag)const;
+	Array encrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add = "") const;
+	PoolByteArray decrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const PoolByteArray p_tag, const String p_add = "") const;
 	
 
 	cripter();
-	~cripter();
+
+	
 };
 
 
