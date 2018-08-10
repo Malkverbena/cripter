@@ -2,23 +2,41 @@
 
 #include "cripter.h"
 
-#include "core/variant.h"
-#include "reference.h"
-#include "core/print_string.h"
+//#include "core/variant.h"
+//#include "reference.h"
 
-#include "thirdparty/mbedtls/include/mbedtls/gcm.h"
-#include "thirdparty/mbedtls/include/mbedtls/aes.h"
+//#include "thirdparty/mbedtls/include/mbedtls/gcm.h"
+//#include "thirdparty/mbedtls/include/mbedtls/aes.h"
 
-#include "thirdparty/mbedtls/include/mbedtls/cipher.h"
-
-#include <cstdio>
-#include <iostream>
+//#include <cstdio>
+//#include <iostream>
 
 #define KEY_SIZE   32
 #define EXT_SIZE   16
 
 //Testar os dados do add_data e Tag
 
+PoolByteArray cripter::encrypt_var_aes_CBC(const Variant p_input, const String p_key) const {
+
+	return encrypt_byte_aes_CBC((encode_var(p_input)), p_key);	
+}
+
+Array cripter::encrypt_var_aes_GCM(const Variant p_input, const String p_key, const String p_add) const {
+
+	return encrypt_byte_aes_GCM((encode_var(p_input)), p_key, p_add);
+}
+
+Variant cripter::decrypt_var_aes_CBC(const PoolByteArray p_input, const String p_key) const{
+
+	return decode_var((decrypt_byte_aes_CBC(p_input, p_key)));
+}
+
+Variant cripter::decrypt_var_aes_GCM(const PoolByteArray p_input, const String p_key, const PoolByteArray p_tag, const String p_add) const {
+
+	return decode_var(decrypt_byte_aes_GCM(p_input, p_key, p_tag, p_add));
+}
+
+//-------
 
 Array cripter::encrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add) const {
 
@@ -62,7 +80,7 @@ Array cripter::encrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_
 	if (add_len == 0){
 		int err = mbedtls_gcm_crypt_and_tag(&ctx, MBEDTLS_GCM_ENCRYPT, sizeof(input), iv, EXT_SIZE, NULL, 0, input, output, EXT_SIZE, tag);
 		if (err != 0){
-			printf("Erro: %i", err);
+			//printf("Erro: %i", err);
 			//Do something about errors
 			return ret;
 		}
@@ -70,7 +88,7 @@ Array cripter::encrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_
 	}else{
 		int err = mbedtls_gcm_crypt_and_tag(&ctx, MBEDTLS_GCM_ENCRYPT, sizeof(input), iv, EXT_SIZE, add, add_len, input, output, EXT_SIZE, tag);
 		if (err != 0){
-			printf(" Erro: %i", err);
+			//printf(" Erro: %i", err);
 			//Do something about errors
 			return ret;
 		}
@@ -133,7 +151,7 @@ PoolByteArray cripter::decrypt_byte_aes_GCM(const PoolByteArray p_input, const S
 	if (add_len == 0){
 		int err =  mbedtls_gcm_auth_decrypt(&ctx, sizeof(input), iv, EXT_SIZE, NULL, 0, tag, EXT_SIZE, input, output);
 		if (err != 0){
-			printf("Erro: %i", err);
+			//printf("Erro: %i", err);
 			//Do something about errors
 			return ret_output;
 		}
@@ -142,7 +160,7 @@ PoolByteArray cripter::decrypt_byte_aes_GCM(const PoolByteArray p_input, const S
 		int err = mbedtls_gcm_auth_decrypt(&ctx, sizeof(input), iv, EXT_SIZE, add, add_len, tag, EXT_SIZE, input, output);
 		if (err != 0){
 			//Do something about errors
-			printf("Erro: %i", err);
+			//printf("Erro: %i", err);
 			return ret_output;	
 		}
 	}
@@ -170,7 +188,7 @@ PoolByteArray cripter::encrypt_byte_aes_CBC(const PoolByteArray p_input, const S
 	int extra_len;
 	int total_len;
 
-	if (data_len % 16 != 0) { 
+	if (data_len % 16) { 
 		extra_len = (16 - (data_len % 16));    
 		total_len = data_len + extra_len ;   
 	} else { 
@@ -237,27 +255,6 @@ PoolByteArray cripter::decrypt_byte_aes_CBC(const PoolByteArray p_input, const S
 }
 
 
-PoolByteArray cripter::encrypt_var_aes_CBC(const Variant p_input, const String p_key) const {
-
-	return encrypt_byte_aes_CBC((encode_var(p_input)), p_key);	
-}
-
-Array cripter::encrypt_var_aes_GCM(const Variant p_input, const String p_key, const String p_add) const {
-
-	return encrypt_byte_aes_GCM((encode_var(p_input)), p_key, p_add);
-}
-
-Variant cripter::decrypt_var_aes_CBC(const PoolByteArray p_input, const String p_key) const{
-
-	return decode_var((decrypt_byte_aes_CBC(p_input, p_key)));
-}
-
-Variant cripter::decrypt_var_aes_GCM(const PoolByteArray p_input, const String p_key, const PoolByteArray p_tag, const String p_add) const {
-
-	return decode_var(decrypt_byte_aes_GCM(p_input, p_key, p_tag, p_add));
-}
-
-    
 PoolByteArray cripter::char2pool(const uint8_t *p_in, size_t p_size)const {
 
     PoolByteArray data;

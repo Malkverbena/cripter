@@ -20,7 +20,7 @@
 
 #include "core/ustring.h"
 #include "reference.h"
-#include "core/variant.h"
+//#include "core/variant.h"
 #include "core/io/marshalls.h"
 
 
