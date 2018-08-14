@@ -31,8 +31,7 @@ class cripter : public Reference {
 	
 private:
 
-	//struct cripter_err {	}
-	
+	//struct cripter_err {	}	
 
 	PoolByteArray encode_var(const Variant p_data) const;
 	Variant decode_var(const PoolByteArray p_data) const;
@@ -45,8 +44,7 @@ protected:
 
 	static void _bind_methods();
 	
-
-			
+				
 public:
 
 	//CBC
@@ -58,7 +56,7 @@ public:
 	
 	
 	//GCM
-	Array encrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add = "") const;
+	Array encrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add = "" ) const;
 	PoolByteArray decrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const PoolByteArray p_tag, const String p_add = "") const;
 	
 	Array encrypt_var_aes_GCM(const Variant p_input, const String p_key, const String p_add = "") const;

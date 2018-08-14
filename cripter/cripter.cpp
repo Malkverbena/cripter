@@ -4,8 +4,9 @@
 
 #define KEY_SIZE   32
 #define EXT_SIZE   16
+#define TAG_SIZE   4
 
-//Testar os dados do add_data e Tag
+
 
 PoolByteArray cripter::encrypt_var_aes_CBC(const Variant p_input, const String p_key) const {
 
@@ -31,7 +32,7 @@ Variant cripter::decrypt_var_aes_GCM(const PoolByteArray p_input, const String p
 
 Array cripter::encrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add) const {
 
-    //Prepare key & iv **
+ 	//Prepare key & iv **
 	String h_key = p_key.md5_text();
 	uint8_t key[KEY_SIZE];
 	uint8_t iv[EXT_SIZE];
@@ -53,7 +54,7 @@ Array cripter::encrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_
 	}
 
 	//Prepare Tag
-    uint8_t tag[EXT_SIZE];
+    uint8_t tag[TAG_SIZE];
     
     
 	//Prepare Addicional Data
@@ -69,7 +70,7 @@ Array cripter::encrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_
     mbedtls_gcm_setkey(&ctx, MBEDTLS_CIPHER_ID_AES, key, 256);
 
 	if (add_len == 0){
-		int err = mbedtls_gcm_crypt_and_tag(&ctx, MBEDTLS_GCM_ENCRYPT, sizeof(input), iv, EXT_SIZE, NULL, 0, input, output, EXT_SIZE, tag);
+		int err = mbedtls_gcm_crypt_and_tag(&ctx, MBEDTLS_GCM_ENCRYPT, sizeof(input), iv, EXT_SIZE, NULL, 0, input, output, TAG_SIZE, tag);
 		if (err != 0){
 			//printf("Erro: %i", err);
 			//Do something about errors
@@ -77,7 +78,7 @@ Array cripter::encrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_
 		}
 
 	}else{
-		int err = mbedtls_gcm_crypt_and_tag(&ctx, MBEDTLS_GCM_ENCRYPT, sizeof(input), iv, EXT_SIZE, add, add_len, input, output, EXT_SIZE, tag);
+		int err = mbedtls_gcm_crypt_and_tag(&ctx, MBEDTLS_GCM_ENCRYPT, sizeof(input), iv, EXT_SIZE, add, add_len, input, output, TAG_SIZE, tag);
 		if (err != 0){
 			//printf(" Erro: %i", err);
 			//Do something about errors
@@ -140,7 +141,7 @@ PoolByteArray cripter::decrypt_byte_aes_GCM(const PoolByteArray p_input, const S
     mbedtls_gcm_setkey(&ctx, MBEDTLS_CIPHER_ID_AES, key, 256);
      	
 	if (add_len == 0){
-		int err =  mbedtls_gcm_auth_decrypt(&ctx, sizeof(input), iv, EXT_SIZE, NULL, 0, tag, EXT_SIZE, input, output);
+		int err =  mbedtls_gcm_auth_decrypt(&ctx, sizeof(input), iv, EXT_SIZE, NULL, 0, tag, TAG_SIZE, input, output);
 		if (err != 0){
 			//printf("Erro: %i", err);
 			//Do something about errors
@@ -148,7 +149,7 @@ PoolByteArray cripter::decrypt_byte_aes_GCM(const PoolByteArray p_input, const S
 		}
 
 	}else{
-		int err = mbedtls_gcm_auth_decrypt(&ctx, sizeof(input), iv, EXT_SIZE, add, add_len, tag, EXT_SIZE, input, output);
+		int err = mbedtls_gcm_auth_decrypt(&ctx, sizeof(input), iv, EXT_SIZE, add, add_len, tag, TAG_SIZE, input, output);
 		if (err != 0){
 			//Do something about errors
 			//printf("Erro: %i", err);
@@ -160,9 +161,11 @@ PoolByteArray cripter::decrypt_byte_aes_GCM(const PoolByteArray p_input, const S
 	return char2pool(output, sizeof(output));
 	
 }
+
+//-------
     
 PoolByteArray cripter::encrypt_byte_aes_CBC(const PoolByteArray p_input, const String p_key) const{
-	
+
 	//Prepare key & iv **
 	String h_key = p_key.md5_text();
 	uint8_t key[KEY_SIZE];
@@ -291,6 +294,8 @@ Variant cripter::decode_var(const PoolByteArray p_data) const {
 	}
 	return ret;
 }
+
+//-------
 
 void cripter::_bind_methods(){
 
