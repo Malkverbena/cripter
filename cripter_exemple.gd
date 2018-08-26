@@ -14,8 +14,7 @@ func _ready():
 	var rsa_private_key_path = "id_rsa"
 	var rsa_password = "lucasrogeri1985"
 
-	
-	var gcm_add = "adicional data is: 3:16"
+	var gcm_add = "adicional data is: port: 316"
 	
 	var gcm_input = var2bytes("The cow goes muuuu")
 	var cbc_input = var2bytes("The cat goes mewwwww")
@@ -28,8 +27,7 @@ func _ready():
 	print("\n \n \n#---Encrypt/Decrypt bytes GCM")
 #-------------------------------------------------------------------
 	var encrypted_array_gcm = Cripte.encrypt_byte_aes_GCM(gcm_input, key, gcm_add)
-	var gcm_tag = encrypted_array_gcm[1]
-	var decrypted_array_gcm = Cripte.decrypt_byte_aes_GCM(encrypted_array_gcm[0], key, gcm_tag, gcm_add) 
+	var decrypted_array_gcm = Cripte.decrypt_byte_aes_GCM(encrypted_array_gcm, key, gcm_add) 
 	print("\n", bytes2var(decrypted_array_gcm))
 
 
@@ -58,8 +56,7 @@ func _ready():
 	print("\n \n \n#---Encrypt/Decrypt Var GCM")
 #-------------------------------------------------------------------
 	var encrypted_var_gcm = Cripte.encrypt_var_aes_GCM(gcm_var, key, gcm_add)
-	var gcm_var_tag = encrypted_var_gcm[1]
-	var decrypted_var_gcm = Cripte.decrypt_var_aes_GCM(encrypted_var_gcm[0], key, gcm_var_tag, gcm_add) 
+	var decrypted_var_gcm = Cripte.decrypt_var_aes_GCM(encrypted_var_gcm, key, gcm_add) 
 	print("\n", decrypted_var_gcm)
 
 
