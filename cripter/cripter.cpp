@@ -15,31 +15,33 @@
 #define TAG_SIZE   4
 
 
-//-------------- Encrypt/Decrypt Vars
+//-------------- Encrypt Vars
 
 PoolByteArray cripter::encrypt_var_aes_CBC(const Variant p_input, const String p_key) const {
 
 	return encrypt_byte_aes_CBC((encode_var(p_input)), p_key);	
 }
 
-Array cripter::encrypt_var_aes_GCM(const Variant p_input, const String p_key, const String p_add) const {
+PoolByteArray cripter::encrypt_var_aes_GCM(const Variant p_input, const String p_key, const String p_add) const {
 
 	return encrypt_byte_aes_GCM((encode_var(p_input)), p_key, p_add);
 }
+
+PoolByteArray cripter::encrypt_var_RSA(const Variant p_input, const String p_key_path) const{
+
+	return encrypt_byte_RSA((encode_var(p_input)), p_key_path);	
+}
+
+//-------------- Decrypt Vars
 
 Variant cripter::decrypt_var_aes_CBC(const PoolByteArray p_input, const String p_key) const{
 
 	return decode_var((decrypt_byte_aes_CBC(p_input, p_key)));
 }
 
-Variant cripter::decrypt_var_aes_GCM(const PoolByteArray p_input, const String p_key, const PoolByteArray p_tag, const String p_add) const {
+Variant cripter::decrypt_var_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add) const {
 
-	return decode_var(decrypt_byte_aes_GCM(p_input, p_key, p_tag, p_add));
-}
-
-PoolByteArray cripter::encrypt_var_RSA(const Variant p_input, const String p_key_path) const{
-
-	return encrypt_byte_RSA((encode_var(p_input)), p_key_path);	
+	return decode_var(decrypt_byte_aes_GCM(p_input, p_key, p_add));
 }
 
 Variant cripter::decrypt_var_RSA(const PoolByteArray p_input, const String p_key_path, const String p_password) const{
@@ -51,7 +53,7 @@ Variant cripter::decrypt_var_RSA(const PoolByteArray p_input, const String p_key
 
 //-------------- Simetric - GCM
 
-Array cripter::encrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add) const {
+PoolByteArray cripter::encrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add) const {
 
  	//Prepare key & iv **
 	String h_key = p_key.md5_text();
@@ -67,13 +69,13 @@ Array cripter::encrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_
 	//Preparing Buffer
 	int err = 0;
     char erro[1024];
-	Array ret;
+	//Array ret;
 	uint8_t input[p_input.size()];
 	uint8_t output[sizeof(input)];
 
 	PoolVector<uint8_t>::Read r = p_input.read();   //PoolByteArray to CharArray
 	for (int i = 0; i < p_input.size(); i++) {
-		input[i] = p_input[i];
+		input[i] = (uint8_t)p_input[i];
 	}
 
 	//Prepare Tag
@@ -111,16 +113,14 @@ Array cripter::encrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_
        
     PoolByteArray ret_output = char2pool(output, sizeof(output));
    	PoolByteArray ret_tag = char2pool(tag, sizeof(tag));
-   	
-   	ret.push_back(ret_output);
-   	ret.push_back(ret_tag);
-   	
-   	return ret;
+   	ret_output.append_array(ret_tag);
+
+  	return ret_output;
 
 }
 
 
-PoolByteArray cripter::decrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const PoolByteArray p_tag, const String p_add) const{
+PoolByteArray cripter::decrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add) const{
 	
 	//Prepare key & iv **
 	String h_key = p_key.md5_text();
@@ -135,20 +135,22 @@ PoolByteArray cripter::decrypt_byte_aes_GCM(const PoolByteArray p_input, const S
 	
 	//Preparing Buffer
 	int err = 0;
-    char erro[1024];
+    char erro[512];
 	PoolByteArray ret_output;
-	uint8_t input[int (p_input.size())];
-	uint8_t output[int (sizeof(input))];
+	int data_len = p_input.size();
+	uint8_t input[(data_len - TAG_SIZE)];
+	uint8_t output[sizeof(input)];
+	
 	PoolVector<uint8_t>::Read r = p_input.read();   
-	for (int i = 0; i < p_input.size(); i++) {
-		input[i] = p_input[i];
+	for (int i = 0; i < (data_len - TAG_SIZE); i++) {
+		input[i] = (uint8_t)p_input[i];
 	}
 				
-	//Preparing Tag
-	uint8_t tag[EXT_SIZE];
-	PoolVector<uint8_t>::Read R = p_tag.read();   
-	for (int i = 0; i < p_tag.size(); i++) {
-		tag[i] = (uint8_t)p_tag[i];
+	//Extract Tag
+	uint8_t tag[TAG_SIZE];
+	PoolVector<uint8_t>::Read R = p_input.read();   
+	for (int i = 0; i < TAG_SIZE; i++) {
+		tag[i] = (uint8_t)p_input[ (data_len - TAG_SIZE) + i];
 	}
 		
 	//Prepare Addicional Data
@@ -177,7 +179,8 @@ PoolByteArray cripter::decrypt_byte_aes_GCM(const PoolByteArray p_input, const S
 		print_error( erro );
     }		
     }
-	    						
+	    			
+	//Ending
 	mbedtls_gcm_free( &ctx );
 	return char2pool(output, sizeof(output));
 	
@@ -216,7 +219,7 @@ PoolByteArray cripter::encrypt_byte_aes_CBC(const PoolByteArray p_input, const S
 	uint8_t input[total_len];
 	uint8_t output[sizeof(input)];
 	for (int g = 0; g < data_len; g++){   
-		input[g] = p_input[g];
+		input[g] = (uint8_t)p_input[g];
 	}
 	for (int l = data_len; l < total_len; l++){  //fill with zeros couse the input must be multiple of 16
 		input[l] = 0;
@@ -269,7 +272,7 @@ PoolByteArray cripter::decrypt_byte_aes_CBC(const PoolByteArray p_input, const S
     char erro[1024];
 			
 	for (int g = 0; g < data_len; g++){   
-		input[g] = p_input[g];
+		input[g] = (uint8_t)p_input[g];
 	}
 	
 	//Decryptation **
@@ -319,7 +322,7 @@ PoolByteArray cripter::encrypt_byte_RSA(const PoolByteArray p_input, String p_ke
 	
 	PoolVector<uint8_t>::Read r = p_input.read();   
 	for (int i = 0; i < sizeof(input); i++) {
-		input[i] = p_input[i];
+		input[i] = (uint8_t)p_input[i];
 	}
 	
 	
@@ -400,7 +403,7 @@ PoolByteArray cripter::decrypt_byte_RSA(const PoolByteArray p_input, const Strin
 	
 	PoolVector<uint8_t>::Read r = p_input.read();   
 	for (int i = 0; i < 512; i++) {
-		input[i] = p_input[i];
+		input[i] = (uint8_t)p_input[i];
 	}
 	
 	//---Init
@@ -455,7 +458,7 @@ PoolByteArray cripter::char2pool(const uint8_t *p_in, const size_t p_size)const 
 	data.resize(p_size);
 	PoolVector<uint8_t>::Write w = data.write();
 	for (int i = 0; i < p_size; i++) {
-		w[i] = p_in[i];
+		w[i] = (uint8_t)p_in[i];
 	}
 	w = PoolVector<uint8_t>::Write();
 	return data;
@@ -509,9 +512,9 @@ void cripter::_bind_methods(){
 	
 	//GCM
 	ClassDB::bind_method(D_METHOD("encrypt_byte_aes_GCM", "Encrypt data", "key", "Additional Data"),&cripter::encrypt_byte_aes_GCM);
-	ClassDB::bind_method(D_METHOD("decrypt_byte_aes_GCM", "Decrypt data", "key", "Tag", "Additional Data"),&cripter::decrypt_byte_aes_GCM);
-	ClassDB::bind_method(D_METHOD("encrypt_var_aes_GCM", "Encrypt data", "key"),&cripter::encrypt_var_aes_GCM);
-	ClassDB::bind_method(D_METHOD("decrypt_var_aes_GCM", "Decrypt data", "key", "Tag", "Additional Data"),&cripter::decrypt_var_aes_GCM);
+	ClassDB::bind_method(D_METHOD("decrypt_byte_aes_GCM", "Decrypt data", "key", "Additional Data"),&cripter::decrypt_byte_aes_GCM);
+	ClassDB::bind_method(D_METHOD("encrypt_var_aes_GCM", "Encrypt data", "key", "Additional Data"),&cripter::encrypt_var_aes_GCM);
+	ClassDB::bind_method(D_METHOD("decrypt_var_aes_GCM", "Decrypt data", "key", "Additional Data"),&cripter::decrypt_var_aes_GCM);
 	
 	
 	//RSA

@@ -8,7 +8,7 @@
 		+ Encode/Decote Variant to encrypt var function
 		+ RSA
 		Streaming 
-		+-Errors
+		Find a proper way to show Errors
 		Keep c++98
 		rewrite the bad code(awake and with coffee this time...)
 		IV = (Data size + key )+hash?  -  * memcpy?
@@ -51,15 +51,17 @@ public:
 	//CBC
 	PoolByteArray encrypt_byte_aes_CBC(const PoolByteArray p_input, const String p_key) const;
 	PoolByteArray decrypt_byte_aes_CBC(const PoolByteArray p_input, const String p_key) const;
+	
 	PoolByteArray encrypt_var_aes_CBC(const Variant p_input, const String p_key) const;
 	Variant decrypt_var_aes_CBC(const PoolByteArray p_input, const String p_key) const;
 	
 	
 	//GCM
-	Array encrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add = "") const;
-	PoolByteArray decrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const PoolByteArray p_tag, const String p_add = "") const;
-	Array encrypt_var_aes_GCM(const Variant p_input, const String p_key, const String p_add = "") const;
-	Variant decrypt_var_aes_GCM(const PoolByteArray p_input, const String p_key, const PoolByteArray p_tag, const String p_add = "") const;
+	PoolByteArray encrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add = "") const;
+	PoolByteArray decrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add = "") const;
+	
+	PoolByteArray encrypt_var_aes_GCM(const Variant p_input, const String p_key, const String p_add = "") const;
+	Variant decrypt_var_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add = "") const;
 	
 	
 	//RSA
