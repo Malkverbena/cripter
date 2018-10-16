@@ -12,7 +12,7 @@ func _ready():
 	
 	var rsa_public_key_path = "id_rsa.pem"
 	var rsa_private_key_path = "id_rsa"
-	var rsa_password = "lucasrogeri1985"
+	var rsa_password = "mypass"
 
 	var gcm_add = "adicional data is: port: 316"
 	
