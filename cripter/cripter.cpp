@@ -68,7 +68,7 @@ PoolByteArray cripter::encrypt_byte_aes_GCM(const PoolByteArray p_input, const S
 
 	//Preparing Buffer
 	int err = 0;
-    char erro[1024];
+    char erro[150];
 	//Array ret;
 	uint8_t input[p_input.size()];
 	uint8_t output[sizeof(input)];
@@ -135,7 +135,7 @@ PoolByteArray cripter::decrypt_byte_aes_GCM(const PoolByteArray p_input, const S
 	
 	//Preparing Buffer
 	int err = 0;
-    char erro[512];
+    char erro[150];
 	PoolByteArray ret_output;
 	int data_len = p_input.size();
 	uint8_t input[(data_len - TAG_SIZE)];
@@ -206,7 +206,7 @@ PoolByteArray cripter::encrypt_byte_aes_CBC(const PoolByteArray p_input, const S
 	int extra_len;
 	int total_len;
 	int err = 0;
-    char erro[1024];
+    char erro[150];
 
 	if (data_len % 16) { 
 		extra_len = (16 - (data_len % 16));    
@@ -269,7 +269,7 @@ PoolByteArray cripter::decrypt_byte_aes_CBC(const PoolByteArray p_input, const S
 	uint8_t input[data_len];	
 	uint8_t output[data_len];
 	int err = 0;
-    char erro[1024];
+    char erro[150];
 			
 	for (int g = 0; g < data_len; g++){   
 		input[g] = (uint8_t)p_input[g];
@@ -312,10 +312,10 @@ PoolByteArray cripter::encrypt_byte_RSA(const PoolByteArray p_input, String p_ke
 	
 
 	//---Buffer
-	size_t i, olen = 0;
+	size_t olen = 0;
 	const char *pers = "rsa_encrypt";
     int err = 0;
-    char erro[1024];
+    char erro[150];
     
 	uint8_t input[p_input.size()];
 	uint8_t output[512];
@@ -395,11 +395,11 @@ PoolByteArray cripter::decrypt_byte_RSA(const PoolByteArray p_input, const Strin
 	uint8_t input[512];
 	uint8_t output[512];
 	
-    size_t i, olen = 0;
+    size_t olen = 0;
 	const char *pers = "rsa_decrypt";
 	    
 	int err = 0;
-    char erro[1024];	
+    char erro[150];	
 	
 	PoolVector<uint8_t>::Read r = p_input.read();   
 	for (int i = 0; i < 512; i++) {
@@ -453,7 +453,8 @@ PoolByteArray cripter::decrypt_byte_RSA(const PoolByteArray p_input, const Strin
 
 //-------------- Support
 
-PoolByteArray cripter::char2pool(const uint8_t *p_in, const size_t p_size)const {
+PoolByteArray cripter::char2pool(const uint8_t *p_in, const size_t p_size)const 
+{
     PoolByteArray data;
 	data.resize(p_size);
 	PoolVector<uint8_t>::Write w = data.write();
@@ -465,7 +466,8 @@ PoolByteArray cripter::char2pool(const uint8_t *p_in, const size_t p_size)const 
 }
 
 
-PoolByteArray cripter::encode_var(const Variant data) const {
+PoolByteArray cripter::encode_var(const Variant data) const 
+{
 	//Encoder	
 	PoolByteArray ret;
 	int len;
@@ -483,7 +485,8 @@ PoolByteArray cripter::encode_var(const Variant data) const {
 }
 
 
-Variant cripter::decode_var(const PoolByteArray p_data) const {
+Variant cripter::decode_var(const PoolByteArray p_data) const 
+{
 	//Decoder
 	Variant ret;
 	PoolByteArray data = p_data;
