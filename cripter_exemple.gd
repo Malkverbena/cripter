@@ -10,8 +10,8 @@ func _ready():
 
 #	var user_ir = OS.get_user_data_dir()
 	
-	var rsa_public_key_path = "id_rsa.pem"
-	var rsa_private_key_path = "id_rsa"
+	var rsa_public_key_path = "/home/user/certs/id_rsa.pem"
+	var rsa_private_key_path = "/home/user/certs/id_rsa"
 	var rsa_password = "mypass"
 
 	var gcm_add = "adicional data is: port: 316"
