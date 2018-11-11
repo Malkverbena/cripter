@@ -1,2 +1,2 @@
 # cripter
-Module with encryption functions for Godot Engine.
+Module of encryption functions for Godot Engine.
