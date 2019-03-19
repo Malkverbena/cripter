@@ -2,12 +2,8 @@
 
 #include "register_types.h"
 
-//#include <stddef.h>
-
 #include "cripter.h"
-#include "variant.h"
-#include "thirdparty/mbedtls/include/mbedtls/gcm.h"
-#include "thirdparty/mbedtls/include/mbedtls/aes.h"
+#include "core/variant.h"
 
 
 void register_cripter_types() {
@@ -16,6 +12,6 @@ void register_cripter_types() {
 }
 
 void unregister_cripter_types() {
-   //nothing to do here
+   
 }
 

@@ -17,14 +17,14 @@
 
 //-------------- Encrypt Vars
 
-PoolByteArray cripter::encrypt_var_aes_CBC(const Variant p_input, const String p_key) const {
+PoolByteArray cripter::encrypt_var_CBC(const Variant p_input, const String p_key) const {
 
-	return encrypt_byte_aes_CBC((encode_var(p_input)), p_key);	
+	return encrypt_byte_CBC((encode_var(p_input)), p_key);	
 }
 
-PoolByteArray cripter::encrypt_var_aes_GCM(const Variant p_input, const String p_key, const String p_add) const {
+PoolByteArray cripter::encrypt_var_GCM(const Variant p_input, const String p_key, const String p_add) const {
 
-	return encrypt_byte_aes_GCM((encode_var(p_input)), p_key, p_add);
+	return encrypt_byte_GCM((encode_var(p_input)), p_key, p_add);
 }
 
 PoolByteArray cripter::encrypt_var_RSA(const Variant p_input, const String p_key_path) const{
@@ -34,14 +34,14 @@ PoolByteArray cripter::encrypt_var_RSA(const Variant p_input, const String p_key
 
 //-------------- Decrypt Vars
 
-Variant cripter::decrypt_var_aes_CBC(const PoolByteArray p_input, const String p_key) const{
+Variant cripter::decrypt_var_CBC(const PoolByteArray p_input, const String p_key) const{
 
-	return decode_var((decrypt_byte_aes_CBC(p_input, p_key)));
+	return decode_var((decrypt_byte_CBC(p_input, p_key)));
 }
 
-Variant cripter::decrypt_var_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add) const {
+Variant cripter::decrypt_var_GCM(const PoolByteArray p_input, const String p_key, const String p_add) const {
 
-	return decode_var(decrypt_byte_aes_GCM(p_input, p_key, p_add));
+	return decode_var(decrypt_byte_GCM(p_input, p_key, p_add));
 }
 
 Variant cripter::decrypt_var_RSA(const PoolByteArray p_input, const String p_key_path, const String p_password) const{
@@ -53,7 +53,7 @@ Variant cripter::decrypt_var_RSA(const PoolByteArray p_input, const String p_key
 
 //-------------- Simetric - GCM
 
-PoolByteArray cripter::encrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add) const {
+PoolByteArray cripter::encrypt_byte_GCM(const PoolByteArray p_input, const String p_key, const String p_add) const {
 
  	//Prepare key & iv **
 	String h_key = p_key.md5_text();
@@ -120,7 +120,7 @@ PoolByteArray cripter::encrypt_byte_aes_GCM(const PoolByteArray p_input, const S
 }
 
 
-PoolByteArray cripter::decrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add) const{
+PoolByteArray cripter::decrypt_byte_GCM(const PoolByteArray p_input, const String p_key, const String p_add) const{
 	
 	//Prepare key & iv **
 	String h_key = p_key.md5_text();
@@ -188,7 +188,7 @@ PoolByteArray cripter::decrypt_byte_aes_GCM(const PoolByteArray p_input, const S
 
 //-------------- Simetric - CBC
     
-PoolByteArray cripter::encrypt_byte_aes_CBC(const PoolByteArray p_input, const String p_key) const{
+PoolByteArray cripter::encrypt_byte_CBC(const PoolByteArray p_input, const String p_key) const{
 
 	//Prepare key & iv **
 	String h_key = p_key.md5_text();
@@ -250,7 +250,7 @@ PoolByteArray cripter::encrypt_byte_aes_CBC(const PoolByteArray p_input, const S
 
 } 
     
-PoolByteArray cripter::decrypt_byte_aes_CBC(const PoolByteArray p_input, const String p_key) const {
+PoolByteArray cripter::decrypt_byte_CBC(const PoolByteArray p_input, const String p_key) const {
 
 	//Prepare key & iv **
 	String h_key = p_key.md5_text();
@@ -505,19 +505,18 @@ Variant cripter::decode_var(const PoolByteArray p_data) const
 
 void cripter::_bind_methods(){
 
-	//CBC
-	
-	ClassDB::bind_method(D_METHOD("encrypt_byte_aes_CBC", "Encrypt data", "key"),&cripter::encrypt_byte_aes_CBC);
-	ClassDB::bind_method(D_METHOD("decrypt_byte_aes_CBC", "Decrypt data", "key"),&cripter::decrypt_byte_aes_CBC);
-	ClassDB::bind_method(D_METHOD("encrypt_var_aes_CBC", "Encrypt data", "key"),&cripter::encrypt_var_aes_CBC);
-	ClassDB::bind_method(D_METHOD("decrypt_var_aes_CBC", "Decrypt data", "key"),&cripter::decrypt_var_aes_CBC);
+	//CBC	
+	ClassDB::bind_method(D_METHOD("encrypt_byte_CBC", "Encrypt data", "key"),&cripter::encrypt_byte_CBC);
+	ClassDB::bind_method(D_METHOD("decrypt_byte_CBC", "Decrypt data", "key"),&cripter::decrypt_byte_CBC);
+	ClassDB::bind_method(D_METHOD("encrypt_var_CBC", "Encrypt data", "key"),&cripter::encrypt_var_CBC);
+	ClassDB::bind_method(D_METHOD("decrypt_var_CBC", "Decrypt data", "key"),&cripter::decrypt_var_CBC);
 	
 	
 	//GCM
-	ClassDB::bind_method(D_METHOD("encrypt_byte_aes_GCM", "Encrypt data", "key", "Additional Data"),&cripter::encrypt_byte_aes_GCM);
-	ClassDB::bind_method(D_METHOD("decrypt_byte_aes_GCM", "Decrypt data", "key", "Additional Data"),&cripter::decrypt_byte_aes_GCM);
-	ClassDB::bind_method(D_METHOD("encrypt_var_aes_GCM", "Encrypt data", "key", "Additional Data"),&cripter::encrypt_var_aes_GCM);
-	ClassDB::bind_method(D_METHOD("decrypt_var_aes_GCM", "Decrypt data", "key", "Additional Data"),&cripter::decrypt_var_aes_GCM);
+	ClassDB::bind_method(D_METHOD("encrypt_byte_GCM", "Encrypt data", "key", "Additional Data"),&cripter::encrypt_byte_GCM);
+	ClassDB::bind_method(D_METHOD("decrypt_byte_GCM", "Decrypt data", "key", "Additional Data"),&cripter::decrypt_byte_GCM);
+	ClassDB::bind_method(D_METHOD("encrypt_var_GCM", "Encrypt data", "key", "Additional Data"),&cripter::encrypt_var_GCM);
+	ClassDB::bind_method(D_METHOD("decrypt_var_GCM", "Decrypt data", "key", "Additional Data"),&cripter::decrypt_var_GCM);
 	
 	
 	//RSA

@@ -24,15 +24,15 @@ func _ready():
 	
 	print("\n \n \n#---Encrypt/Decrypt bytes GCM")
 #-------------------------------------------------------------------
-	var encrypted_array_gcm = Cripte.encrypt_byte_aes_GCM(gcm_input, key, gcm_add)
-	var decrypted_array_gcm = Cripte.decrypt_byte_aes_GCM(encrypted_array_gcm, key, gcm_add) 
+	var encrypted_array_gcm = Cripte.encrypt_byte_GCM(gcm_input, key, gcm_add)
+	var decrypted_array_gcm = Cripte.decrypt_byte_GCM(encrypted_array_gcm, key, gcm_add) 
 	print("\n", bytes2var(decrypted_array_gcm))
 
 
 	print("\n \n \n#---Encrypt/Decrypt bytes CBC")
 #-------------------------------------------------------------------
-	var encrypted_array_cbc = Cripte.encrypt_byte_aes_CBC(cbc_input, key)
-	var decrypted_array_cbc = Cripte.decrypt_byte_aes_CBC(encrypted_array_cbc, key)
+	var encrypted_array_cbc = Cripte.encrypt_byte_CBC(cbc_input, key)
+	var decrypted_array_cbc = Cripte.decrypt_byte_CBC(encrypted_array_cbc, key)
 	print("\n", bytes2var(decrypted_array_cbc))
 	
 	
@@ -45,16 +45,16 @@ func _ready():
 	
 	print("\n \n \n#---Encrypt/Decrypt Var CBC")
 #-------------------------------------------------------------------
-	var encrypted_var_cbc = Cripte.encrypt_var_aes_CBC(cbc_var, key)
-	var decrypted_var_cbc = Cripte.decrypt_var_aes_CBC(encrypted_var_cbc, key)
+	var encrypted_var_cbc = Cripte.encrypt_var_CBC(cbc_var, key)
+	var decrypted_var_cbc = Cripte.decrypt_var_CBC(encrypted_var_cbc, key)
 	print("\n", decrypted_var_cbc)
 	
 	
 	
 	print("\n \n \n#---Encrypt/Decrypt Var GCM")
 #-------------------------------------------------------------------
-	var encrypted_var_gcm = Cripte.encrypt_var_aes_GCM(gcm_var, key, gcm_add)
-	var decrypted_var_gcm = Cripte.decrypt_var_aes_GCM(encrypted_var_gcm, key, gcm_add) 
+	var encrypted_var_gcm = Cripte.encrypt_var_GCM(gcm_var, key, gcm_add)
+	var decrypted_var_gcm = Cripte.decrypt_var_GCM(encrypted_var_gcm, key, gcm_add) 
 	print("\n", decrypted_var_gcm)
 
 
