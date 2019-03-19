@@ -5,8 +5,8 @@
 		   GCM		- DONE
 		   RSA		- DONE
 		   ed25519 	- TODO
-		Encode/Decote Variant FOR encrypt var methods		- DONE?
-		Better name for methods
+		Encode/Decote Variant FOR encrypt var methods		- DONE
+		Better name for methods					- DONE?
 		Streaming 
 		Find a proper way to show Errors and debug
 		rewrite the bad code(awake and with coffee this time...)
