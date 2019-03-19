@@ -12,3 +12,4 @@
 		rewrite the bad code(awake and with coffee this time...)
 		IV = (Data size + key )+hash?  -  * memcpy?
 		Maximun size of RSA input data (Depends of key size)
+		Write Docs
