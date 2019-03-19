@@ -2,19 +2,6 @@
 #ifndef CRIPTER_H
 #define CRIPTER_H
 
-/*
-	To Do:
-		+ CBC - GCM
-		+ Encode/Decote Variant to encrypt var function
-		+ RSA
-		Streaming 
-		Find a proper way to show Errors
-		rewrite the bad code(awake and with coffee this time...)
-		IV = (Data size + key )+hash?  -  * memcpy?
-		Maximun size of RSA input data (Depends of key size)
-*/
-
-
 #include "core/reference.h"
 #include "core/io/marshalls.h"
 
@@ -25,10 +12,12 @@
 #include "thirdparty/mbedtls/include/mbedtls/ctr_drbg.h"
 #include "thirdparty/mbedtls/include/mbedtls/rsa.h"
 #include "thirdparty/mbedtls/include/mbedtls/entropy.h"
-//#include "thirdparty/mbedtls/include/mbedtls/config.h"
-//#include "thirdparty/mbedtls/include/mbedtls/platform.h"
-//#include "thirdparty/mbedtls/include/mbedtls/bignum.h"
 
+/*
+#include "thirdparty/mbedtls/include/mbedtls/config.h"
+#include "thirdparty/mbedtls/include/mbedtls/platform.h"
+#include "thirdparty/mbedtls/include/mbedtls/bignum.h"
+*/
 
 class cripter : public Reference {
 	GDCLASS(cripter,Reference);
@@ -48,19 +37,19 @@ protected:
 public:
 
 	//CBC
-	PoolByteArray encrypt_byte_aes_CBC(const PoolByteArray p_input, const String p_key) const;
-	PoolByteArray decrypt_byte_aes_CBC(const PoolByteArray p_input, const String p_key) const;
+	PoolByteArray encrypt_byte_CBC(const PoolByteArray p_input, const String p_key) const;
+	PoolByteArray decrypt_byte_CBC(const PoolByteArray p_input, const String p_key) const;
 	
-	PoolByteArray encrypt_var_aes_CBC(const Variant p_input, const String p_key) const;
-	Variant decrypt_var_aes_CBC(const PoolByteArray p_input, const String p_key) const;
+	PoolByteArray encrypt_var_CBC(const Variant p_input, const String p_key) const;
+	Variant decrypt_var_CBC(const PoolByteArray p_input, const String p_key) const;
 	
 	
 	//GCM
-	PoolByteArray encrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add = "") const;
-	PoolByteArray decrypt_byte_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add = "") const;
+	PoolByteArray encrypt_byte_GCM(const PoolByteArray p_input, const String p_key, const String p_add = "") const;
+	PoolByteArray decrypt_byte_GCM(const PoolByteArray p_input, const String p_key, const String p_add = "") const;
 	
-	PoolByteArray encrypt_var_aes_GCM(const Variant p_input, const String p_key, const String p_add = "") const;
-	Variant decrypt_var_aes_GCM(const PoolByteArray p_input, const String p_key, const String p_add = "") const;
+	PoolByteArray encrypt_var_GCM(const Variant p_input, const String p_key, const String p_add = "") const;
+	Variant decrypt_var_GCM(const PoolByteArray p_input, const String p_key, const String p_add = "") const;
 	
 	
 	//RSA
