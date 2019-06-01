@@ -1,5 +1,6 @@
 extends Node
 
+
 #----Cripter usage:
 
 func _ready():
@@ -8,8 +9,9 @@ func _ready():
 	
 	var key = "My not secret key"
 
-	var rsa_public_key_path = "/home/user/certs/id_rsa.pem"
-	var rsa_private_key_path = "/home/user/certs/id_rsa"
+	#---Must be an absolut path 
+	var rsa_public_key_path = "/home/cleber/certs/id_rsa.pem"
+	var rsa_private_key_path = "/home/cleber/certs/id_rsa"
 	var rsa_password = "mypass"
 
 	var gcm_add = "adicional data is: port: 316"
@@ -18,7 +20,7 @@ func _ready():
 	var cbc_input = var2bytes("The cat goes mewwwww")
 	var rsa_input = var2bytes("The pig goes oink oink")
 	
-	var gcm_var = [234, "ub", {"k":34, "revt":"3e4r", "kjh":Vector3(70,3,5) }, true, Color(1.4,2.3,3.2,4.1)]
+	var gcm_var = [234, "ub", {"k":34, "revt":"3e4r", "kjh":Vector3(70,3,5), [5,"ert", Vector2(0,9)]:Basis() }, true, Color(1.4,2.3,3.2,4.1)]
 	var cbc_var = {"cxv":[345,"vgdf", Vector2(7,0)], "xcv":"6546", "123dfg":5.96}
 	var rsa_var = {"ff":[4,"sdfsdf","sdfsdf",{"cd":456, "hh":Vector3(45,2,84.1)}, 0.14, ["fgf",456,14.02]], 78:4234, "8ug":Vector2(3.8,8.4)}
 	
@@ -40,7 +42,7 @@ func _ready():
 #-------------------------------------------------------------------
 	var encrypted_array_rsa = Cripte.encrypt_byte_RSA(rsa_input, rsa_public_key_path) #---Using public key
 	var decrypted_array_rsa = Cripte.decrypt_byte_RSA(encrypted_array_rsa, rsa_private_key_path, rsa_password) #---Using private key
-	print("\n", bytes2var(decrypted_array_rsa)) 
+#	print("\n", bytes2var(decrypted_array_rsa)) 
 	
 	
 	print("\n \n \n#---Encrypt/Decrypt Var CBC")
@@ -62,8 +64,8 @@ func _ready():
 #-------------------------------------------------------------------
 	var encrypted_var_rsa = Cripte.encrypt_var_RSA(rsa_var, rsa_public_key_path) #---Using public key
 	var decrypted_var_rsa = Cripte.decrypt_var_RSA(encrypted_var_rsa, rsa_private_key_path, rsa_password) #---Using private key
-	print("\n", decrypted_var_rsa) 
+#	print("\n", decrypted_var_rsa) 
 
 
 	print("\n")
-	get_tree().quit()
+#	get_tree().quit()
