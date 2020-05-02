@@ -1,17 +1,15 @@
 #!/usr/bin/env python
+#SCsub
 
 Import('env')
 Import('env_modules')
 
 env_cripter = env_modules.Clone()
+env_cripter.Append(CXXFLAGS=['-std=c++11'])
 
-# Thirdparty source files
-
-# if env['builtin_cripter']:
 thirdparty_dir = "#thirdparty/mbedtls/library/"
 
 if env['builtin_mbedtls']:
-		# Thirdparty source files
 	thirdparty_sources = [
 		"aes.c",
 		"aesni.c",
@@ -89,8 +87,6 @@ if env['builtin_mbedtls']:
 		"xtea.c"
 		]
 	thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
-	#env_cripter.add_source_files(env.modules_sources, thirdparty_sources)
-	#env_cripter.Prepend(CPPPATH=["#thirdparty/mbedtls/include/"])
 
 env_cripter.add_source_files(env.modules_sources, "*.cpp")
 
