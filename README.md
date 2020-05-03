@@ -7,10 +7,13 @@ The cripter_project folder contains a basic project accompanied by a pair of key
 Do not use the keys in this demo for your project. This is unsafe. Generate your own keys.
 
 To generate RSA keys on linux use this command line to generate the private key:
+
 ssh-keygen -t rsa -b 4096 -C "cripter_exemple"
 
-and this command line to generate the public key
+and this command line to generate the public key:
+
 ssh-keygen -f id_rsa.pub -m 'PEM' -e > id_rsa.pem
+
 
 #### Check the sample project for more usage information.
 
