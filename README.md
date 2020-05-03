@@ -1,6 +1,15 @@
 # cripter
 Encryption functions for Godot Engine.
 
+### Instructions:
+To generate RSA keys on linux use this command line to generate the private key:
+ssh-keygen -t rsa -b 4096 -C "cripter_exemple"
+and this command line to generate the public key
+ssh-keygen -f id_rsa.pub -m 'PEM' -e > id_rsa.pem
+#### Use the file cripter_exemple.gd for more usage details.
+
+The same process can be done on Windows and macOS.
+
 
 # Disclaimer
 
