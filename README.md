@@ -1,6 +1,6 @@
 # Warning!!!
 
-# Not ready to Godot 4 yet!
+# Not ready for Godot 4 yet!
 
 
 ## cripter
