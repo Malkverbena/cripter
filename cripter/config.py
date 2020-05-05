@@ -5,7 +5,7 @@ def configure(env):
 	pass
 
 def get_doc_classes():
-	return ["cripter"]
+	return ["cripter",]
 
 def get_doc_path():
 	return "doc_classes"
