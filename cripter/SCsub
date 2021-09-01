@@ -5,7 +5,6 @@ Import('env')
 Import('env_modules')
 
 env_cripter = env_modules.Clone()
-#env_cripter.Append(CXXFLAGS=['-std=c++11'])
 
 thirdparty_dir = "#thirdparty/mbedtls/library/"
 
