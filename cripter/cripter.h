@@ -2,7 +2,7 @@
 #ifndef CRIPTER_H
 #define CRIPTER_H
 
-#include "core/reference.h"
+#include "core/object/ref_counted.h"
 #include "core/io/marshalls.h"
 
 #include "thirdparty/mbedtls/include/mbedtls/gcm.h"
