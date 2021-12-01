@@ -1,7 +1,7 @@
 /*cripter.cpp*/
 
 #include "cripter.h"
-#include "core/print_string.h"
+
 
 //---Do:
 	//RSA  ---> Check if key file is valid / Maximun input size / Erros
@@ -12,23 +12,23 @@
 
 
 //-------------- Encrypt Vars
-PoolByteArray cripter::encrypt_var_CBC(const Variant p_input, const String p_key) const { return encrypt_byte_CBC((encode_var(p_input)), p_key); }
+PackedByteArray cripter::encrypt_var_CBC(const Variant p_input, const String p_key) const { return encrypt_byte_CBC((encode_var(p_input)), p_key); }
 
-PoolByteArray cripter::encrypt_var_GCM(const Variant p_input, const String p_key, const String p_add) const { return encrypt_byte_GCM((encode_var(p_input)), p_key, p_add); }
+PackedByteArray cripter::encrypt_var_GCM(const Variant p_input, const String p_key, const String p_add) const { return encrypt_byte_GCM((encode_var(p_input)), p_key, p_add); }
 
-PoolByteArray cripter::encrypt_var_RSA(const Variant p_input, const String p_key_path) const{ return encrypt_byte_RSA((encode_var(p_input)), p_key_path); }
+PackedByteArray cripter::encrypt_var_RSA(const Variant p_input, const String p_key_path) const{ return encrypt_byte_RSA((encode_var(p_input)), p_key_path); }
 
 
 //-------------- Decrypt Vars
-Variant cripter::decrypt_var_CBC(const PoolByteArray p_input, const String p_key) const{ return decode_var((decrypt_byte_CBC(p_input, p_key))); }
+Variant cripter::decrypt_var_CBC(const PackedByteArray p_input, const String p_key) const{ return decode_var((decrypt_byte_CBC(p_input, p_key))); }
 
-Variant cripter::decrypt_var_GCM(const PoolByteArray p_input, const String p_key, const String p_add) const { return decode_var(decrypt_byte_GCM(p_input, p_key, p_add)); }
+Variant cripter::decrypt_var_GCM(const PackedByteArray p_input, const String p_key, const String p_add) const { return decode_var(decrypt_byte_GCM(p_input, p_key, p_add)); }
 
-Variant cripter::decrypt_var_RSA(const PoolByteArray p_input, const String p_key_path, const String p_password) const{ return decode_var((decrypt_byte_RSA(p_input, p_key_path, p_password))); }
+Variant cripter::decrypt_var_RSA(const PackedByteArray p_input, const String p_key_path, const String p_password) const{ return decode_var((decrypt_byte_RSA(p_input, p_key_path, p_password))); }
 
 
 //-------------- Simetric - GCM
-PoolByteArray cripter::encrypt_byte_GCM(const PoolByteArray p_input, const String p_key, const String p_add) const {
+PackedByteArray cripter::encrypt_byte_GCM(const PackedByteArray p_input, const String p_key, const String p_add) const {
 	int _err = 0;
 	//Prepare key & iv **
 	String h_key = p_key.md5_text();
@@ -45,7 +45,7 @@ PoolByteArray cripter::encrypt_byte_GCM(const PoolByteArray p_input, const Strin
 	uint8_t input[p_input.size()];
 	uint8_t output[sizeof(input)];
 
-	PoolVector<uint8_t>::Read r = p_input.read();   //PoolByteArray to CharArray
+	Vector<uint8_t> r = p_input;   //PackedByteArray to CharArray
 	for (int i = 0; i < p_input.size(); i++) {
 		input[i] = (uint8_t)p_input[i];
 	}
@@ -80,14 +80,14 @@ PoolByteArray cripter::encrypt_byte_GCM(const PoolByteArray p_input, const Strin
 	}
 
 	mbedtls_gcm_free( &ctx );
-	PoolByteArray ret_output = char2pool(output, sizeof(output));
-	PoolByteArray ret_tag = char2pool(tag, sizeof(tag));
+	PackedByteArray ret_output = char2pool(output, sizeof(output));
+	PackedByteArray ret_tag = char2pool(tag, sizeof(tag));
 	ret_output.append_array(ret_tag);
 	return ret_output;
 }
 
 
-PoolByteArray cripter::decrypt_byte_GCM(const PoolByteArray p_input, const String p_key, const String p_add) const{
+PackedByteArray cripter::decrypt_byte_GCM(const PackedByteArray p_input, const String p_key, const String p_add) const{
 	int _err;
 	//Prepare key & iv **
 	String h_key = p_key.md5_text();
@@ -102,18 +102,18 @@ PoolByteArray cripter::decrypt_byte_GCM(const PoolByteArray p_input, const Strin
 
 	//Preparing Buffer
 	char erro[150];
-	PoolByteArray ret_output;
+	PackedByteArray ret_output;
 	int data_len = p_input.size();
 	uint8_t input[(data_len - TAG_SIZE)];
 	uint8_t output[sizeof(input)];
-	PoolVector<uint8_t>::Read r = p_input.read();
+	Vector<uint8_t> r = p_input;
 	for (int i = 0; i < (data_len - TAG_SIZE); i++) {
 		input[i] = (uint8_t)p_input[i];
 	}
 
 	//Extract Tag
 	uint8_t tag[TAG_SIZE];
-	PoolVector<uint8_t>::Read R = p_input.read();
+	Vector<uint8_t> R = p_input;
 	for (int i = 0; i < TAG_SIZE; i++) {
 		tag[i] = (uint8_t)p_input[ (data_len - TAG_SIZE) + i];
 	}
@@ -151,7 +151,7 @@ PoolByteArray cripter::decrypt_byte_GCM(const PoolByteArray p_input, const Strin
 
 
 //-------------- Simetric - CBC
-PoolByteArray cripter::encrypt_byte_CBC(const PoolByteArray p_input, const String p_key) const{
+PackedByteArray cripter::encrypt_byte_CBC(const PackedByteArray p_input, const String p_key) const{
 	int _err;
 	//Prepare key & iv **
 	String h_key = p_key.md5_text();
@@ -204,13 +204,13 @@ PoolByteArray cripter::encrypt_byte_CBC(const PoolByteArray p_input, const Strin
 
 	mbedtls_aes_free( &ctx );
 	//--- Fit data *
-	PoolByteArray ret = char2pool(output, (sizeof(output)));
+	PackedByteArray ret = char2pool(output, (sizeof(output)));
 	ret.push_back(extra_len);
 	return ret;
 }
 
 
-PoolByteArray cripter::decrypt_byte_CBC(const PoolByteArray p_input, const String p_key) const {
+PackedByteArray cripter::decrypt_byte_CBC(const PackedByteArray p_input, const String p_key) const {
 	int _err;
 	//Prepare key & iv **
 	String h_key = p_key.md5_text();
@@ -253,7 +253,7 @@ PoolByteArray cripter::decrypt_byte_CBC(const PoolByteArray p_input, const Strin
 
 
 //-------------- Asymmetric - RSA
-PoolByteArray cripter::encrypt_byte_RSA(const PoolByteArray p_input, String p_key_path) const {
+PackedByteArray cripter::encrypt_byte_RSA(const PackedByteArray p_input, String p_key_path) const {
 	int _err;
 	//--- Load key
 	char key[p_key_path.length()+1];
@@ -267,7 +267,7 @@ PoolByteArray cripter::encrypt_byte_RSA(const PoolByteArray p_input, String p_ke
 	char erro[150];
 	uint8_t input[p_input.size()];
 	uint8_t output[512];
-	PoolVector<uint8_t>::Read r = p_input.read();
+	Vector<uint8_t> r = p_input;
 	for (unsigned int i = 0; i < sizeof(input); i++) {
 		input[i] = (uint8_t)p_input[i];
 	}
@@ -312,7 +312,7 @@ PoolByteArray cripter::encrypt_byte_RSA(const PoolByteArray p_input, String p_ke
 }
 
 
-PoolByteArray cripter::decrypt_byte_RSA(const PoolByteArray p_input, const String p_key_path, const String p_password) const {
+PackedByteArray cripter::decrypt_byte_RSA(const PackedByteArray p_input, const String p_key_path, const String p_password) const {
 	int _err;
 	//--- Load key
 	char key[p_key_path.length()+1];
@@ -333,7 +333,7 @@ PoolByteArray cripter::decrypt_byte_RSA(const PoolByteArray p_input, const Strin
 	size_t olen = 0;
 	const char *pers = "rsa_decrypt";
 	char erro[150];
-	PoolVector<uint8_t>::Read r = p_input.read();
+	Vector<uint8_t> r = p_input;
 	for (int i = 0; i < 512; i++) {
 		input[i] = (uint8_t)p_input[i];
 	}
@@ -377,21 +377,19 @@ PoolByteArray cripter::decrypt_byte_RSA(const PoolByteArray p_input, const Strin
 
 
 //-------------- Support
-PoolByteArray cripter::char2pool(const uint8_t *p_in, const size_t p_size)const{
-	PoolByteArray data;
+PackedByteArray cripter::char2pool(const uint8_t *p_in, const size_t p_size)const{
+	PackedByteArray data;
 	data.resize(p_size);
-	PoolVector<uint8_t>::Write w = data.write();
 	for (unsigned int i = 0; i < p_size; i++) {
-		w[i] = (uint8_t)p_in[i];
+		data.push_back((uint8_t)p_in[i]);
 	}
-	w = PoolVector<uint8_t>::Write();
 	return data;
 }
 
 
-PoolByteArray cripter::encode_var(const Variant data) const{
+PackedByteArray cripter::encode_var(const Variant data) const{
 	//Encoder
-	PoolByteArray ret;
+	PackedByteArray ret;
 	int len;
 	Error err = encode_variant(data, NULL, len);
 	if (err != OK) {
@@ -400,18 +398,18 @@ PoolByteArray cripter::encode_var(const Variant data) const{
 	}
 	ret.resize(len);
 	{
-		PoolByteArray::Write w = ret.write();
-		encode_variant(data, w.ptr(), len);
+		PackedByteArray w = ret;
+		encode_variant(data, w.ptrw(), len);
 	}
 	return ret;
 }
 
 
-Variant cripter::decode_var(const PoolByteArray p_data) const{
+Variant cripter::decode_var(const PackedByteArray p_data) const{
 	//Decoder
 	Variant ret;
-	PoolByteArray data = p_data;
-	PoolByteArray::Read r = data.read();
+	PackedByteArray data = p_data;
+	PackedByteArray r = data;
 	Error err = decode_variant(ret, r.ptr(), data.size(), NULL);
 	if (err != OK) {
 		print_line("Unexpected error decoding bytes to variable");

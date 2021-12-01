@@ -2,7 +2,7 @@
 
 #include "register_types.h"
 #include "cripter.h"
-#include "core/variant.h"
+#include "core/variant/variant.h"
 
 
 void register_cripter_types() {
