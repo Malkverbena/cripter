@@ -5,9 +5,9 @@ Import('env')
 Import('env_modules')
 
 env_cripter = env_modules.Clone()
-env_cripter.disable_warnings()
-env_cripter.Prepend(CPPPATH=["#thirdparty/mbedtls/include/"])
+env_cripter.Append(CXXFLAGS=['-std=c++11'])
 
+thirdparty_dir = "#thirdparty/mbedtls/library/"
 
 if env['builtin_mbedtls']:
 	thirdparty_sources = [
@@ -85,9 +85,10 @@ if env['builtin_mbedtls']:
 		"x509write_crt.c",
 		"x509write_csr.c",
 		"xtea.c"
-	]
-	thirdparty_dir = "#thirdparty/mbedtls/library/"
+		]
 	thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
-	env_cripter.add_source_files(env.modules_sources, thirdparty_sources)
 
 env_cripter.add_source_files(env.modules_sources, "*.cpp")
+
+
+
