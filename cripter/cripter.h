@@ -2,61 +2,103 @@
 #ifndef CRIPTER_H
 #define CRIPTER_H
 
-#include "core/reference.h"
-#include "core/io/marshalls.h"
+#ifdef GODOT4
+	#include "core/object/ref_counted.h"  
+
+#else
+	#include "core/reference.h"
+	//#include "core/bind/core_bind.h" 
+	#include "core/io/marshalls.h"
+
+
+#endif
+//#include "core/io/marshalls.h"
+
+
+
+#include "thirdparty/mbedtls/include/mbedtls/pk.h"
+#include "thirdparty/mbedtls/include/mbedtls/ctr_drbg.h"
+#include "thirdparty/mbedtls/include/mbedtls/entropy.h"
 
 #include "thirdparty/mbedtls/include/mbedtls/gcm.h"
 #include "thirdparty/mbedtls/include/mbedtls/aes.h"
-#include "thirdparty/mbedtls/include/mbedtls/pk.h"
-#include "thirdparty/mbedtls/include/mbedtls/ctr_drbg.h"
 #include "thirdparty/mbedtls/include/mbedtls/rsa.h"
-#include "thirdparty/mbedtls/include/mbedtls/entropy.h"
+
 
 #include "thirdparty/mbedtls/include/mbedtls/error.h"  //  ---  Desenvolver   ---
 
-/*
-#include "thirdparty/mbedtls/include/mbedtls/config.h"
-#include "thirdparty/mbedtls/include/mbedtls/platform.h"
-#include "thirdparty/mbedtls/include/mbedtls/bignum.h"
-*/
+
+//#include "thirdparty/mbedtls/include/mbedtls/config.h"
+//#include "thirdparty/mbedtls/include/mbedtls/platform.h"
+//#include "thirdparty/mbedtls/include/mbedtls/bignum.h"
+
 
 #pragma once
 
-
+/*
+#ifdef GODOT4
+class cripter : public RefCounted{
+	GDCLASS(cripter,RefCounted);
+	typedef PackedByteArray PoolByteArray;
+#else	
+*/
 class cripter : public Reference {
 	GDCLASS(cripter,Reference);
+//#endif
+
 
 
 private:
-	PoolByteArray encode_var(const Variant p_data) const;
-	Variant decode_var(const PoolByteArray p_data) const;
-	PoolByteArray char2pool(const uint8_t *p_in, const size_t p_size) const;
+	mbedtls_pk_context ctx_pkey;
+	mbedtls_entropy_context entropy;
+	mbedtls_ctr_drbg_context ctr_drbg;
+	/*
+#ifdef GODOT4
+	core_bind::Marshalls *_marshalls = memnew(core_bind::Marshalls);
+#else
 
+	_Marshalls *_marshalls = memnew(_Marshalls);
+
+#endif
+*/
 
 protected:
 	static void _bind_methods();
 
 
 public:
+/*
+#ifdef GODOT4
+	typedef PackedByteArray PoolByteArray;
+#endif
+*/
 	//CBC
-	PoolByteArray encrypt_byte_CBC(const PoolByteArray p_input, const String p_key) const;
-	PoolByteArray decrypt_byte_CBC(const PoolByteArray p_input, const String p_key) const;
-	PoolByteArray encrypt_var_CBC(const Variant p_input, const String p_key) const;
-	Variant decrypt_var_CBC(const PoolByteArray p_input, const String p_key) const;
+	Vector<uint8_t> encrypt_byte_CBC(Vector<uint8_t> p_input, String p_key);
+	Vector<uint8_t> decrypt_byte_CBC(Vector<uint8_t> p_input, String p_key);
+
 	//GCM
-	PoolByteArray encrypt_byte_GCM(const PoolByteArray p_input, const String p_key, const String p_add = "") const;
-	PoolByteArray decrypt_byte_GCM(const PoolByteArray p_input, const String p_key, const String p_add = "") const;
-	PoolByteArray encrypt_var_GCM(const Variant p_input, const String p_key, const String p_add = "") const;
-	Variant decrypt_var_GCM(const PoolByteArray p_input, const String p_key, const String p_add = "") const;
+	Vector<uint8_t> encrypt_byte_GCM(Vector<uint8_t> p_input, String p_key, String p_add = "");
+	Vector<uint8_t> decrypt_byte_GCM(Vector<uint8_t> p_input, String p_key, String p_add = "");
+
 	//RSA
-	PoolByteArray encrypt_byte_RSA(const PoolByteArray p_input,  String p_key_path) const;
-	PoolByteArray decrypt_byte_RSA(const PoolByteArray p_input, const String p_key_path, const String p_password) const;
-	PoolByteArray encrypt_var_RSA(const Variant p_input, const String p_key_path) const;
-	Variant decrypt_var_RSA(const PoolByteArray p_input, const String p_key_path, const String p_password) const;
+//	Vector<uint8_t> encrypt_byte_RSA(Vector<uint8_t> p_input, String p_key_path);
+//	Vector<uint8_t> decrypt_byte_RSA(Vector<uint8_t> p_input, String p_key_path, String p_password);
+
 
 	cripter();
+	~cripter();
 };
 
 
 #endif /*cripter.h*/
+
+
+
+/*
+#ifdef GODOT4
+
+#else	
+
+#endif
+*/
 
