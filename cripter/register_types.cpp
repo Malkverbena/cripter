@@ -2,14 +2,13 @@
 
 #include "register_types.h"
 #include "cripter.h"
-#include "core/variant.h"
-
-
+	 
 void register_cripter_types() {
-	ClassDB::register_class<cripter>();
+	ClassDB::register_class<Cripter>();
 }
 
 
 void unregister_cripter_types() {
 }
+
 

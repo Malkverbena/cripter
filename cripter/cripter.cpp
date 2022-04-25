@@ -1,445 +1,326 @@
 /*cripter.cpp*/
 
 #include "cripter.h"
-#include "core/print_string.h"
 
-//---Do:
-	//RSA  ---> Check if key file is valid / Maximun input size / Erros
-
-#define KEY_SIZE  32
-#define EXT_SIZE  16
+#define KEY_SIZE 32
+#define IV_SIZE  16
 #define TAG_SIZE  4
 
-
-//-------------- Encrypt Vars
-PoolByteArray cripter::encrypt_var_CBC(const Variant p_input, const String p_key) const { return encrypt_byte_CBC((encode_var(p_input)), p_key); }
-
-PoolByteArray cripter::encrypt_var_GCM(const Variant p_input, const String p_key, const String p_add) const { return encrypt_byte_GCM((encode_var(p_input)), p_key, p_add); }
-
-PoolByteArray cripter::encrypt_var_RSA(const Variant p_input, const String p_key_path) const{ return encrypt_byte_RSA((encode_var(p_input)), p_key_path); }
-
-
-//-------------- Decrypt Vars
-Variant cripter::decrypt_var_CBC(const PoolByteArray p_input, const String p_key) const{ return decode_var((decrypt_byte_CBC(p_input, p_key))); }
-
-Variant cripter::decrypt_var_GCM(const PoolByteArray p_input, const String p_key, const String p_add) const { return decode_var(decrypt_byte_GCM(p_input, p_key, p_add)); }
-
-Variant cripter::decrypt_var_RSA(const PoolByteArray p_input, const String p_key_path, const String p_password) const{ return decode_var((decrypt_byte_RSA(p_input, p_key_path, p_password))); }
-
+//---Do:
+	//RSA  ---> Check if key file is valid 
+	//RSA  ---> mbedtls_pk_check_pair
 
 //-------------- Simetric - GCM
-PoolByteArray cripter::encrypt_byte_GCM(const PoolByteArray p_input, const String p_key, const String p_add) const {
-	int _err = 0;
-	//Prepare key & iv **
-	String h_key = p_key.md5_text();
-	uint8_t key[KEY_SIZE];
-	uint8_t iv[EXT_SIZE];
-	for (int i = 0; i < KEY_SIZE; i++) {
-		key[i] = h_key[i];
-	}
-	for (int i = 0; i < EXT_SIZE; i++) {
-		iv[i] = key[i*2];
-	}
-	//Preparing Buffer
-	char erro[150];
-	uint8_t input[p_input.size()];
-	uint8_t output[sizeof(input)];
-
-	PoolVector<uint8_t>::Read r = p_input.read();   //PoolByteArray to CharArray
-	for (int i = 0; i < p_input.size(); i++) {
-		input[i] = (uint8_t)p_input[i];
-	}
-
-	//Prepare Tag
-	uint8_t tag[TAG_SIZE];
-	//Prepare Addicional Data
+Vector<uint8_t> Cripter::gcm_encrypt(Vector<uint8_t> p_input, String p_key, String p_add ){
+	String error_text;
+	int size = p_input.size();
 	int add_len = p_add.length();
-	uint8_t add[add_len];
-	for (int i = 0; i < add_len; i++) {
-		add[i] = p_add[i];
+	uint8_t p_tag[TAG_SIZE];
+	uint8_t buffer[size];
+	Vector<uint8_t> ret;
+
+	mbedtls_gcm_init(&gcm_ctx);
+
+	int mbedtls_erro = mbedtls_gcm_setkey(&gcm_ctx, MBEDTLS_CIPHER_ID_AES, (unsigned char *)p_key.md5_text().utf8().get_data(), 256);
+	if( mbedtls_erro != OK) {
+		error_text = show_error(mbedtls_erro, "mbedtls_gcm_setkey" );  
 	}
 
-	//Encryptation
-	mbedtls_gcm_context ctx;
-	mbedtls_gcm_init(&ctx);
-	mbedtls_gcm_setkey(&ctx, MBEDTLS_CIPHER_ID_AES, key, 256);
-
-	if (add_len == 0) {
-		_err = mbedtls_gcm_crypt_and_tag(&ctx, MBEDTLS_GCM_ENCRYPT, sizeof(input), iv, EXT_SIZE, NULL, 0, input, output, TAG_SIZE, tag);
-		if( _err != 0) {
-		mbedtls_strerror( _err, erro, sizeof(erro) );
-		print_error( erro );
+	if( mbedtls_erro == OK) { 
+		if (add_len > 0) {
+			mbedtls_erro = mbedtls_gcm_crypt_and_tag(&gcm_ctx, MBEDTLS_GCM_ENCRYPT, size, p_key.md5_buffer().ptr(), IV_SIZE, (unsigned char *)p_add.utf8().get_data(), add_len, p_input.ptr(), buffer, TAG_SIZE, p_tag);
+		}else{
+			mbedtls_erro = mbedtls_gcm_crypt_and_tag(&gcm_ctx, MBEDTLS_GCM_ENCRYPT, size, p_key.md5_buffer().ptr(), IV_SIZE, NULL, 0, p_input.ptr(), buffer, TAG_SIZE, p_tag);
 		}
-	}
-	else {
-		_err = mbedtls_gcm_crypt_and_tag(&ctx, MBEDTLS_GCM_ENCRYPT, sizeof(input), iv, EXT_SIZE, add, add_len, input, output, TAG_SIZE, tag);
-		if( _err != 0) {
-			mbedtls_strerror( _err, erro, sizeof(erro) );
-			print_error( erro );
-		}
+	}else{ 
+		error_text = show_error(mbedtls_erro, "mbedtls_gcm_crypt_and_tag"); 
 	}
 
-	mbedtls_gcm_free( &ctx );
-	PoolByteArray ret_output = char2pool(output, sizeof(output));
-	PoolByteArray ret_tag = char2pool(tag, sizeof(tag));
-	ret_output.append_array(ret_tag);
-	return ret_output;
+	mbedtls_gcm_free( &gcm_ctx );
+
+	ERR_FAIL_COND_V_MSG(mbedtls_erro, ret, error_text + itos(mbedtls_erro));
+
+	ret.resize(size);
+	memcpy(ret.ptrw(), buffer, size);
+	Vector<uint8_t> tag; 
+	tag.resize(TAG_SIZE);
+	memcpy(tag.ptrw(), p_tag, TAG_SIZE);
+	ret.append_array(tag);
+	return ret;
 }
 
 
-PoolByteArray cripter::decrypt_byte_GCM(const PoolByteArray p_input, const String p_key, const String p_add) const{
-	int _err;
-	//Prepare key & iv **
-	String h_key = p_key.md5_text();
-	uint8_t key[KEY_SIZE];
-	uint8_t iv[EXT_SIZE];
-	for (int i = 0; i < KEY_SIZE; i++)  {
-		key[i] = h_key[i];
-	}
-	for (int i = 0; i < EXT_SIZE; i++) {
-		iv[i] = key[i*2];
-	}
+Vector<uint8_t> Cripter::gcm_decrypt(Vector<uint8_t> p_input, String p_key, String p_add ){
+	String error_text;
+	Vector<uint8_t> ret;
+	int size = p_input.size();
+	int add_size = p_add.length();
+	uint8_t output[ size - TAG_SIZE ];
 
-	//Preparing Buffer
-	char erro[150];
-	PoolByteArray ret_output;
-	int data_len = p_input.size();
-	uint8_t input[(data_len - TAG_SIZE)];
-	uint8_t output[sizeof(input)];
-	PoolVector<uint8_t>::Read r = p_input.read();
-	for (int i = 0; i < (data_len - TAG_SIZE); i++) {
+#ifdef GD4
+	Vector<uint8_t> data = (p_input.slice(0, size - TAG_SIZE));
+	Vector<uint8_t> tag = (p_input.slice(size - TAG_SIZE, size));
+#else
+	uint8_t p_tag[TAG_SIZE];
+	for (int i = 0; i < TAG_SIZE; i++) {
+		p_tag[i] = (uint8_t)p_input[ (size - TAG_SIZE) + i];
+	}
+	Vector<uint8_t> tag;
+	memcpy(tag.ptrw(), p_tag, TAG_SIZE);
+
+	uint8_t input[ size - TAG_SIZE ];
+	for (int i = 0; i < (size - TAG_SIZE); i++) {
 		input[i] = (uint8_t)p_input[i];
 	}
+	Vector<uint8_t> data;
+	memcpy(data.ptrw(), input, size - TAG_SIZE);
+#endif
 
-	//Extract Tag
-	uint8_t tag[TAG_SIZE];
-	PoolVector<uint8_t>::Read R = p_input.read();
-	for (int i = 0; i < TAG_SIZE; i++) {
-		tag[i] = (uint8_t)p_input[ (data_len - TAG_SIZE) + i];
-	}
-	//Prepare Addicional Data
-	int add_len = p_add.length();
-	uint8_t add[add_len];
-	for (int i = 0; i < add_len; i++) {
-		add[i] = p_add[i];
+	mbedtls_gcm_init(&gcm_ctx);
+
+	int mbedtls_erro = mbedtls_gcm_setkey(&gcm_ctx, MBEDTLS_CIPHER_ID_AES, (unsigned char *)p_key.md5_text().utf8().get_data(), 256);
+	if( mbedtls_erro != OK) {
+		error_text = show_error(mbedtls_erro, "mbedtls_gcm_setkey" );  
 	}
 
-	//Decryptation
-	mbedtls_gcm_context ctx;
-	mbedtls_gcm_init(&ctx);
-	mbedtls_gcm_setkey(&ctx, MBEDTLS_CIPHER_ID_AES, key, 256);
-
-	if (add_len == 0) {
-		_err = mbedtls_gcm_auth_decrypt(&ctx, sizeof(input), iv, EXT_SIZE, NULL, 0, tag, TAG_SIZE, input, output);
-		if( _err != 0) {
-			mbedtls_strerror( _err, erro, sizeof(erro) );
-			print_error( erro );
+	if( mbedtls_erro == OK) { 
+		if (add_size > 0) {
+			mbedtls_erro = mbedtls_gcm_auth_decrypt(&gcm_ctx, data.size(), p_key.md5_buffer().ptr(), IV_SIZE, (unsigned char *)p_add.utf8().get_data(), add_size, tag.ptr(), TAG_SIZE, data.ptr(), output);
+		}else{
+			mbedtls_erro = mbedtls_gcm_auth_decrypt(&gcm_ctx, data.size(), p_key.md5_buffer().ptr(), IV_SIZE, NULL, add_size, tag.ptr(), TAG_SIZE, data.ptr(), output);
 		}
-	}
-	else {
-		_err = mbedtls_gcm_auth_decrypt(&ctx, sizeof(input), iv, EXT_SIZE, add, add_len, tag, TAG_SIZE, input, output);
-		if( _err != 0) {
-		mbedtls_strerror( _err, erro, sizeof(erro) );
-		print_error( erro );
-		}
+	}else{ 
+		error_text = show_error(mbedtls_erro, "mbedtls_gcm_auth_decrypt" ); 
 	}
 
-	//Ending
-	mbedtls_gcm_free( &ctx );
-	return char2pool(output, sizeof(output));
+	mbedtls_gcm_free( &gcm_ctx );
+
+	ERR_FAIL_COND_V_MSG(mbedtls_erro, ret, error_text + itos(mbedtls_erro));
+
+	ret.resize(size - TAG_SIZE);
+	memcpy(ret.ptrw(), output, size);
+	return ret;
 }
 
 
 //-------------- Simetric - CBC
-PoolByteArray cripter::encrypt_byte_CBC(const PoolByteArray p_input, const String p_key) const{
-	int _err;
-	//Prepare key & iv **
-	String h_key = p_key.md5_text();
-	uint8_t key[KEY_SIZE];
-	uint8_t iv[EXT_SIZE];
-	for (int i = 0; i < KEY_SIZE; i++) {
-		key[i] = h_key[i];
+Vector<uint8_t> Cripter::cbc_encrypt(Vector<uint8_t> p_input, String p_key){
+	String error_text;
+	int extra_len = 0;
+	Vector<uint8_t> ret;
+	int input_size = p_input.size();
+
+	mbedtls_aes_context aes_ctx;
+	mbedtls_aes_init( &aes_ctx );
+
+	if (input_size % 16) {
+		extra_len = (16 - (input_size % 16));
+		input_size = input_size + extra_len;
+		p_input.resize(input_size);
 	}
-	for (int i = 0; i < EXT_SIZE; i++) {
-		iv[i] = key[i*2];
+	uint8_t output[input_size];
+
+	mbedtls_aes_init( &aes_ctx );
+
+	int mbedtls_erro = mbedtls_aes_setkey_enc( &aes_ctx, (unsigned char *)p_key.md5_text().utf8().get_data(), 256 );
+	if( mbedtls_erro != OK) {
+		error_text = show_error(mbedtls_erro, "mbedtls_aes_setkey_enc");  
 	}
 
-	//Preparing buffer **
-	int data_len = p_input.size();
-	int extra_len;
-	int total_len;
-	char erro[150];
-	if (data_len % 16) {
-		extra_len = (16 - (data_len % 16));
-		total_len = data_len + extra_len ;
-	}
-	else {
-		total_len = data_len;
-		extra_len = 0;
+	if( mbedtls_erro == OK) { 
+		mbedtls_erro = mbedtls_aes_crypt_cbc( &aes_ctx, MBEDTLS_AES_ENCRYPT, input_size,  (unsigned char *)p_key.md5_buffer().ptr(), p_input.ptr(), output );
+	}else{ 
+		error_text = show_error(mbedtls_erro, "mbedtls_aes_crypt_cbc"); 
 	}
 
-	uint8_t input[total_len];
-	uint8_t output[sizeof(input)];
-	for (int g = 0; g < data_len; g++) {
-		input[g] = (uint8_t)p_input[g];
-	}
-	for (int l = data_len; l < total_len; l++) { //fill with zeros couse the input must be multiple of 16
-		input[l] = 0;
-	}
+	mbedtls_aes_free( &aes_ctx );
 
-	//Encryptation **
-	mbedtls_aes_context ctx;
-	mbedtls_aes_init( &ctx );
+	ERR_FAIL_COND_V_MSG(mbedtls_erro, ret, error_text + itos(mbedtls_erro));
 
-	_err = mbedtls_aes_setkey_enc( &ctx, key, 256 );
-	if( _err != 0) {
-		mbedtls_strerror( _err, erro, sizeof(erro) );
-		print_error( erro );
-	}
-	_err = mbedtls_aes_crypt_cbc( &ctx, MBEDTLS_AES_ENCRYPT, total_len, iv, input, output );
-	if( _err != 0) {
-		mbedtls_strerror( _err, erro, sizeof(erro) );
-		print_error( erro );
-	}
-
-	mbedtls_aes_free( &ctx );
-	//--- Fit data *
-	PoolByteArray ret = char2pool(output, (sizeof(output)));
-	ret.push_back(extra_len);
+	ret.resize(input_size);
+	memcpy(ret.ptrw(), output, input_size);
+	ret.push_back((uint8_t)extra_len);
 	return ret;
 }
 
 
-PoolByteArray cripter::decrypt_byte_CBC(const PoolByteArray p_input, const String p_key) const {
-	int _err;
-	//Prepare key & iv **
-	String h_key = p_key.md5_text();
-	uint8_t key[KEY_SIZE];
-	uint8_t iv[EXT_SIZE];
-	for (int i = 0; i < KEY_SIZE; i++) {
-		key[i] = h_key[i];
-	}
-	for (int i = 0; i < EXT_SIZE; i++) {
-		iv[i] = key[i*2];
+Vector<uint8_t> Cripter::cbc_decrypt(Vector<uint8_t> p_input, String p_key){
+	String error_text;
+	Vector<uint8_t> ret;
+	
+	int input_size = p_input.size();
+	int extra_len = (int)p_input[input_size-1];
+	p_input.resize(input_size-1);
+	
+	input_size = p_input.size();
+	uint8_t output[input_size];
+
+	mbedtls_aes_init( &aes_ctx );
+
+	int mbedtls_erro = mbedtls_aes_setkey_dec(&aes_ctx, (unsigned char *)p_key.md5_text().utf8().get_data(), 256);
+	if( mbedtls_erro != OK) {
+		error_text = show_error(mbedtls_erro, "mbedtls_aes_setkey_dec");  
 	}
 
-	//Preparing buffer **
-	int data_len = p_input.size() - 1;
-	int zeros = p_input[data_len];
-	uint8_t input[data_len];
-	uint8_t output[data_len];
-	char erro[150];
-	for (int g = 0; g < data_len; g++) {
-		input[g] = (uint8_t)p_input[g];
+	if( mbedtls_erro == OK) { 
+		mbedtls_erro = mbedtls_aes_crypt_cbc( &aes_ctx, MBEDTLS_AES_DECRYPT, input_size,  (unsigned char *)p_key.md5_buffer().ptr(), p_input.ptr(), output);
+	}else{ 
+		error_text = show_error(mbedtls_erro, "mbedtls_aes_crypt_cbc"); 
 	}
 
-	//Decryptation **
-	mbedtls_aes_context ctx;
-	mbedtls_aes_init( &ctx );
-	_err = mbedtls_aes_setkey_dec(&ctx, key, 256);
-	if(_err != 0) {
-		mbedtls_strerror( _err, erro, sizeof(erro) );
-		print_error( erro );
-	}
-	_err = mbedtls_aes_crypt_cbc( &ctx, MBEDTLS_AES_DECRYPT, data_len, iv, input, output);
-	if( _err != 0) {
-		mbedtls_strerror( _err, erro, sizeof(erro) );
-		print_error( erro );
-	}
-	mbedtls_aes_free( &ctx );
-	//Fit data **
-	return char2pool(output, (sizeof(output) - zeros)); //No more extra zeros here
+	mbedtls_aes_free( &aes_ctx );
+
+	ERR_FAIL_COND_V_MSG(mbedtls_erro, ret, error_text + itos(mbedtls_erro));
+
+	ret.resize(input_size - extra_len);
+	memcpy(ret.ptrw(), output, input_size - extra_len);
+	return ret;
 }
 
 
-//-------------- Asymmetric - RSA
-PoolByteArray cripter::encrypt_byte_RSA(const PoolByteArray p_input, String p_key_path) const {
-	int _err;
-	//--- Load key
-	char key[p_key_path.length()+1];
-	for (int i = 0; i < p_key_path.length(); i++) {
-		key[i] = p_key_path[i];
-	}
-	key[p_key_path.length()] = 0;
-	//---Buffer
+//-------------- Asymmetric - RSA 188 - 239
+Vector<uint8_t> Cripter::rsa_encrypt(Vector<uint8_t> p_input, String p_key_path){
 	size_t olen = 0;
-	const char *pers = "rsa_encrypt";
-	char erro[150];
-	uint8_t input[p_input.size()];
+	String error_text;
 	uint8_t output[512];
-	PoolVector<uint8_t>::Read r = p_input.read();
-	for (unsigned int i = 0; i < sizeof(input); i++) {
-		input[i] = (uint8_t)p_input[i];
-	}
+	Vector<uint8_t> ret;
+	const char *pers = "rsa_encrypt";
+	const char *key_path = p_key_path.utf8().get_data();
 
-	//---Init
-	mbedtls_pk_context pk;
-	mbedtls_pk_init( &pk );
-	mbedtls_entropy_context entropy;
+	mbedtls_pk_init( &key_ctx );
 	mbedtls_entropy_init( &entropy );
-	mbedtls_ctr_drbg_context ctr_drbg;
 	mbedtls_ctr_drbg_init( &ctr_drbg );
-	_err = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func,
-									&entropy, (const unsigned char *) pers,
-									strlen( pers )) ;
-	if( _err != 0) {
-		mbedtls_strerror( _err, erro, sizeof(erro) );
-		print_error( erro );
+	
+	int mbedtls_erro = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char *) pers, strlen( pers )) ;
+	if( mbedtls_erro != OK) {
+		error_text = show_error(mbedtls_erro, "mbedtls_ctr_drbg_seed");  
+	}
+	
+	if( mbedtls_erro == OK) { 
+		mbedtls_erro = mbedtls_pk_parse_public_keyfile( &key_ctx,  key_path);
+	}else{ 
+		error_text = show_error(mbedtls_erro, "mbedtls_pk_parse_public_keyfile");  
 	}
 
-	//---Encryptation
-	_err = mbedtls_pk_parse_public_keyfile( &pk,  key);
-	if( _err != 0 ) {
-		mbedtls_strerror( _err, erro, sizeof(erro) );
-		print_error( erro );
-	//	printf( "%c", erro );
+	if( mbedtls_erro == OK) { 
+		mbedtls_erro = mbedtls_pk_encrypt( &key_ctx, p_input.ptr(), p_input.size(), output, &olen, sizeof(output), mbedtls_ctr_drbg_random, &ctr_drbg );
+	}else{ 
+		error_text = show_error(mbedtls_erro, "mbedtls_pk_encrypt");  
 	}
 
-	fflush( stdout );
-	_err = mbedtls_pk_encrypt( &pk, input, sizeof(input),
-									output, &olen, sizeof(output),
-									mbedtls_ctr_drbg_random, &ctr_drbg );
-	if( _err != 0 ) {
-		mbedtls_strerror( _err, erro, sizeof(erro) );
-		print_error( erro );
-	}
-
-	//--- Fit data
-	mbedtls_pk_free( &pk);
+	mbedtls_pk_free( &key_ctx);
 	mbedtls_ctr_drbg_free( &ctr_drbg );
 	mbedtls_entropy_free( &entropy );
-	return char2pool(output, olen);  
+
+	ERR_FAIL_COND_V_MSG(mbedtls_erro, ret, error_text + itos(mbedtls_erro));
+
+	ret.resize(olen);
+	memcpy(ret.ptrw(), output, olen);
+	return ret;
 }
 
 
-PoolByteArray cripter::decrypt_byte_RSA(const PoolByteArray p_input, const String p_key_path, const String p_password) const {
-	int _err;
-	//--- Load key
-	char key[p_key_path.length()+1];
-	for (int i = 0; i < p_key_path.length(); i++) {
-		key[i] = p_key_path[i];
-	}
-	key[p_key_path.length()] = 0;
-	//--- Load Password
-	char password[p_password.length()+1];
-	for (int i = 0; i < p_password.length(); i++) {
-		password[i] = p_password[i];
-	}
-	password[p_password.length()] = 0;
+Vector<uint8_t> Cripter::rsa_decrypt(Vector<uint8_t> p_input, String p_key_path, String p_password){
 
-	//---Buffer
-	uint8_t input[512];
+	const char *key_path = p_key_path.utf8().get_data();
+	const char *password = p_password.utf8().get_data();
+
+	String error_text;
 	uint8_t output[512];
 	size_t olen = 0;
 	const char *pers = "rsa_decrypt";
-	char erro[150];
-	PoolVector<uint8_t>::Read r = p_input.read();
-	for (int i = 0; i < 512; i++) {
-		input[i] = (uint8_t)p_input[i];
-	}
+	Vector<uint8_t> ret;
 
-	//---Init
-	mbedtls_pk_context ctx_pk;
-	mbedtls_pk_init( &ctx_pk );
-	mbedtls_entropy_context entropy;
+	mbedtls_pk_init( &key_ctx );
 	mbedtls_entropy_init( &entropy );
-	mbedtls_ctr_drbg_context ctr_drbg;
 	mbedtls_ctr_drbg_init( &ctr_drbg );
-	_err = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func,
-							&entropy, (const unsigned char *) pers,
-							strlen( pers ));
-	if(_err != 0) {
-		mbedtls_strerror( _err, erro, sizeof(erro) );
-		print_error( erro );
+	
+	int mbedtls_erro = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char *) pers, strlen( pers ));
+	if( mbedtls_erro != OK) {
+		error_text = show_error(mbedtls_erro, "mbedtls_ctr_drbg_seed" );  
 	}
-	//---Decryptation **
-	_err = mbedtls_pk_parse_keyfile( &ctx_pk, key, password );
-	if( _err != 0 ) {
-		mbedtls_strerror( _err, erro, sizeof(erro) );
-		print_error( erro );
+	
+	if( mbedtls_erro == OK) { 
+		mbedtls_erro = mbedtls_pk_parse_keyfile( &key_ctx, key_path, password );
+	}else{ 
+		error_text = show_error(mbedtls_erro, "mbedtls_pk_parse_keyfile" );  
 	}
 
-	fflush( stdout );
-	_err = mbedtls_pk_decrypt( &ctx_pk, input, sizeof(input),
-									output, &olen, sizeof(output),
-									mbedtls_ctr_drbg_random, &ctr_drbg );
-	if(_err != 0 ) {
-		mbedtls_strerror( _err, erro, sizeof(erro) );
-		print_error( erro );
+	if( mbedtls_erro == OK) { 
+		mbedtls_erro = mbedtls_pk_decrypt( &key_ctx, p_input.ptr(), p_input.size(), output, &olen, sizeof(output), mbedtls_ctr_drbg_random, &ctr_drbg );
+	}else{ 
+		error_text = show_error(mbedtls_erro, "mbedtls_pk_decrypt" );  
 	}
 
-	//---Turn off the lights **
-	mbedtls_pk_free( &ctx_pk);
+	mbedtls_pk_free( &key_ctx);
 	mbedtls_ctr_drbg_free( &ctr_drbg );
 	mbedtls_entropy_free( &entropy );
-	return char2pool(output, olen);
-}
+	
+	ERR_FAIL_COND_V_MSG(mbedtls_erro, ret, error_text + itos(mbedtls_erro));
 
-
-//-------------- Support
-PoolByteArray cripter::char2pool(const uint8_t *p_in, const size_t p_size)const{
-	PoolByteArray data;
-	data.resize(p_size);
-	PoolVector<uint8_t>::Write w = data.write();
-	for (unsigned int i = 0; i < p_size; i++) {
-		w[i] = (uint8_t)p_in[i];
-	}
-	w = PoolVector<uint8_t>::Write();
-	return data;
-}
-
-
-PoolByteArray cripter::encode_var(const Variant data) const{
-	//Encoder
-	PoolByteArray ret;
-	int len;
-	Error err = encode_variant(data, NULL, len);
-	if (err != OK) {
-		print_line("Unexpected error encoding variable to bytes");
-		return ret;
-	}
-	ret.resize(len);
-	{
-		PoolByteArray::Write w = ret.write();
-		encode_variant(data, w.ptr(), len);
-	}
+//---------------------------------------------------
+	ret.resize(olen);
+	memcpy(ret.ptrw(), output, olen);
 	return ret;
 }
 
 
-Variant cripter::decode_var(const PoolByteArray p_data) const{
-	//Decoder
-	Variant ret;
-	PoolByteArray data = p_data;
-	PoolByteArray::Read r = data.read();
-	Error err = decode_variant(ret, r.ptr(), data.size(), NULL);
-	if (err != OK) {
-		print_line("Unexpected error decoding bytes to variable");
-		Variant f;
-		return f;
+int Cripter::check_keys_pair(String p_private_key_path, String p_public_key_path){
+
+	String error_text;
+	const char *private_key_path = p_private_key_path.utf8().get_data();
+	const char *public_key_path = p_public_key_path.utf8().get_data();
+
+	mbedtls_pk_context private_ctx;
+	mbedtls_pk_context public_ctx;
+	mbedtls_pk_init( &private_ctx );
+	mbedtls_pk_init( &public_ctx );
+
+	int mbedtls_erro = mbedtls_pk_parse_keyfile( &private_ctx, private_key_path, "" );
+	if( mbedtls_erro != OK) {
+		error_text = show_error(mbedtls_erro, "mbedtls_pk_parse_keyfile" );  
 	}
+	
+	if( mbedtls_erro == OK) { 
+		mbedtls_erro = mbedtls_pk_parse_public_keyfile( &public_ctx, public_key_path );
+	}else{ 
+		error_text = show_error(mbedtls_erro, "mbedtls_pk_parse_public_keyfile" );  
+	}
+
+	int ret = mbedtls_pk_check_pair(&public_ctx, &private_ctx);
+
+	mbedtls_pk_free( &private_ctx);
+	mbedtls_pk_free( &public_ctx);
+
+	ERR_FAIL_COND_V_MSG(mbedtls_erro, ret, error_text + itos(mbedtls_erro));	
+
 	return ret;
 }
 
 
-void cripter::_bind_methods(){
-	//CBC
-	ClassDB::bind_method(D_METHOD("encrypt_byte_CBC", "Encrypt data", "key"),&cripter::encrypt_byte_CBC);
-	ClassDB::bind_method(D_METHOD("decrypt_byte_CBC", "Decrypt data", "key"),&cripter::decrypt_byte_CBC);
-	ClassDB::bind_method(D_METHOD("encrypt_var_CBC", "Encrypt data", "key"),&cripter::encrypt_var_CBC);
-	ClassDB::bind_method(D_METHOD("decrypt_var_CBC", "Decrypt data", "key"),&cripter::decrypt_var_CBC);
-	//GCM
-	ClassDB::bind_method(D_METHOD("encrypt_byte_GCM", "Encrypt data", "key", "Additional Data"),&cripter::encrypt_byte_GCM);
-	ClassDB::bind_method(D_METHOD("decrypt_byte_GCM", "Decrypt data", "key", "Additional Data"),&cripter::decrypt_byte_GCM);
-	ClassDB::bind_method(D_METHOD("encrypt_var_GCM", "Encrypt data", "key", "Additional Data"),&cripter::encrypt_var_GCM);
-	ClassDB::bind_method(D_METHOD("decrypt_var_GCM", "Decrypt data", "key", "Additional Data"),&cripter::decrypt_var_GCM);
-	//RSA
-	ClassDB::bind_method(D_METHOD("encrypt_byte_RSA", "Encrypt data", "key path"),&cripter::encrypt_byte_RSA);
-	ClassDB::bind_method(D_METHOD("decrypt_byte_RSA", "Decrypt data", "key path", "Password"),&cripter::decrypt_byte_RSA);
-	ClassDB::bind_method(D_METHOD("encrypt_var_RSA", "Encrypt data", "key path"),&cripter::encrypt_var_RSA);
-	ClassDB::bind_method(D_METHOD("decrypt_var_RSA", "Decrypt data", "key path", "Password"),&cripter::decrypt_var_RSA);
+String Cripter::show_error(int mbedtls_erro, const char* p_function){
+	char mbedtls_erro_text[256];
+	mbedtls_strerror( mbedtls_erro, mbedtls_erro_text, sizeof(mbedtls_erro_text) );
+	String ret = String::utf8(mbedtls_erro_text) + String::utf8("\n At function: ") + String::utf8(p_function) ;
+	print_error(ret);
+	return ret;
 }
 
 
-cripter::cripter(){
-} /*cripter.cpp*/
+void Cripter::_bind_methods(){
+	ClassDB::bind_method(D_METHOD("gcm_encrypt", "Encrypt data", "Password", "Additional Data"),&Cripter::gcm_encrypt);
+	ClassDB::bind_method(D_METHOD("gcm_decrypt", "Decrypt data", "Password", "Additional Data"),&Cripter::gcm_decrypt);
+	ClassDB::bind_method(D_METHOD("cbc_encrypt", "Encrypt data", "Password"),&Cripter::cbc_encrypt);
+	ClassDB::bind_method(D_METHOD("cbc_decrypt", "Decrypt data", "Password"),&Cripter::cbc_decrypt);
+	ClassDB::bind_method(D_METHOD("rsa_encrypt", "Encrypt data", "Private key path"),&Cripter::rsa_encrypt);
+	ClassDB::bind_method(D_METHOD("rsa_decrypt", "Decrypt data", "Public key path", "Password"),&Cripter::rsa_decrypt, DEFVAL(String()));
+	
+	ClassDB::bind_method(D_METHOD("check_keys_pair", "Private key path", "Public key path"),&Cripter::check_keys_pair);
+}
+
+Cripter::Cripter(){
+}
+Cripter::~Cripter(){
+}
+
+/*cripter.cpp*/

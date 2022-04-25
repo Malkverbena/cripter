@@ -1,0 +1,28 @@
+<class name="Cripter" inherits="RefCounted" version="0.1">
+
+	<brief_description>
+		Encryption functions for Godot Engine.
+	</brief_description>
+
+	<description>
+		This module allows you to easily encrypt and decrypt data.
+	</description>
+   
+    <tutorials>
+        <link title="Custom drawing in 2D">https://docs.godotengine.org/en/latest/tutorials/2d/custom_drawing_in_2d.html</link>
+        <link title="All 2D Demos">https://github.com/godotengine/godot-demo-projects/tree/master/2d</link>
+    </tutorials>
+
+
+
+    <methods>
+   
+   
+   
+   
+   
+    </methods>
+
+
+</class>
+
