@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://bd8fxuasbmyf2"]
+
+[ext_resource type="Script" path="res://CBC.gd" id="1_fe1bp"]
+
+[node name="CBC" type="Node"]
+script = ExtResource( "1_fe1bp" )

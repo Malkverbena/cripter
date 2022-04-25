@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cqsf4uprvkf0a"]
+
+[ext_resource type="Script" path="res://GCM.gd" id="1_3r6xq"]
+
+[node name="GCM" type="Node"]
+script = ExtResource( "1_3r6xq" )

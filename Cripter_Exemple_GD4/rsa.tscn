@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://dhx4dmwmfk471"]
+
+[ext_resource type="Script" path="res://RSA.gd" id="1_ncosg"]
+
+[node name="RSA" type="Node"]
+script = ExtResource( "1_ncosg" )
+private_key = "/mnt/sda1/WORK4/TESTES/Cripter/rsa_keys/rsa_private_key.pem"
+public_key = "/mnt/sda1/WORK4/TESTES/Cripter/rsa_keys/rsa_public_key.pem"
