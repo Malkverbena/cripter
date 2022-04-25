@@ -1,17 +1,8 @@
 
-	To Do:
-		Algorithms:
-		   CBC		- DONE
-		   GCM		- DONE
-		   RSA		- DONE
-		   ed25519 	- TODO
-		Encode/Decote Variant FOR encrypt var methods		- DONE
-		Better name for methods					- DONE?
-
-		Streaming - Finish the new methods.
-
-		Find a proper way to show Errors and debug  (Using Godot debug methods)
-		rewrite the bad code(awake and with coffee this time...)
-		IV = (Data size + key )+hash?  -  * memcpy?
-		Maximun size of RSA input data (Depends of key size)
-		Write Docs
+To Do:
+   Algorithms:
+   CBC        - DONE
+   GCM        - DONE
+   RSA        - DONE
+   ed25519    - TODO
+   Write Docs - DONE
