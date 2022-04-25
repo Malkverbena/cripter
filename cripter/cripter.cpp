@@ -74,7 +74,6 @@ Vector<uint8_t> Cripter::gcm_decrypt(Vector<uint8_t> p_input, String p_key, Stri
 	}
 	Vector<uint8_t> data;
 	memcpy(data.ptrw(), input, size - TAG_SIZE);
-	
 #endif
 
 	mbedtls_gcm_init(&gcm_ctx);
