@@ -1,23 +1,28 @@
 # cripter
 Encryption functions for Godot Engine.
 
-### Instructions:
-Download or clone the repository to your computer. Copy the folder cripter into the Godot module folder and compile.
-The cripter_project folder contains a basic project accompanied by a pair of keys and instructions for generating them.
-Do not use the keys in this demo for your project. This is unsafe. Generate your own keys.
 
-To generate RSA keys on linux use this command line to generate the private key:
+## Instructions:
+Download or clone the repository to your computer. Copy the cripter folder into the Godot module folder and compile.
+It's expected this module will be compiled in both Godot 3 and Godot 4 without problems. It can detect Godot's version and will do the job. 
+It is expected that this module can be compiled on all platforms that Godot supports.
 
-ssh-keygen -t rsa -b 4096 -C "cripter_exemple"
+There are two examples of identical projects. One for Godot 3 and one for Godot 4. They are in the folders "Cripter_Exemple_GD". 
 
-and this command line to generate the public key:
+This module offers encryption using the algorithms: GCM, CBC and RSA. The RSA algorithm is the only one that needs an SSH key pair.
+The example projects has a pair of keys that you can use in your tests.
+DO NOT use the keys in this demo for your project. This is unsafe. Generate your own keys.
 
-ssh-keygen -f id_rsa.pub -m 'PEM' -e > id_rsa.pem
 
+#### To generate an RSA key pair on linux use this commands lines:
 
-#### Check the sample project for more usage information.
+Generate the private key:
 
-The same process can be done on Windows and macOS.
+openssl genrsa -out rsa_private_key.pem -aes256 4096
+
+Generate the public key:
+
+openssl rsa -in rsa_private_key.pem -pubout -out rsa_public_key.pem
 
 
 # Disclaimer
