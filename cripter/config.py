@@ -1,11 +1,17 @@
 def can_build(env, platform):
 	return True
 
+
 def configure(env):
 	pass
 
+
 def get_doc_classes():
-	return ["cripter",]
+	return [
+        "Cripter",
+	]
+
 
 def get_doc_path():
-	return "doc_classes"
+	import version
+	return "doc_classes" + str(version.major)

@@ -51,13 +51,13 @@ Vector<uint8_t> Cripter::gcm_encrypt(Vector<uint8_t> p_input, String p_key, Stri
 
 
 Vector<uint8_t> Cripter::gcm_decrypt(Vector<uint8_t> p_input, String p_key, String p_add ){
-	int size = p_input.size();
 	String error_text;
 	Vector<uint8_t> ret;
+	int size = p_input.size();
 	int add_size = p_add.length();
 	uint8_t output[ size - TAG_SIZE ];
 
-#if VERSION_MAJOR == 4
+#ifdef GD4
 	Vector<uint8_t> data = (p_input.slice(0, size - TAG_SIZE));
 	Vector<uint8_t> tag = (p_input.slice(size - TAG_SIZE, size));
 #else
@@ -147,12 +147,13 @@ Vector<uint8_t> Cripter::cbc_encrypt(Vector<uint8_t> p_input, String p_key){
 Vector<uint8_t> Cripter::cbc_decrypt(Vector<uint8_t> p_input, String p_key){
 	String error_text;
 	Vector<uint8_t> ret;
+	
 	int input_size = p_input.size();
+	int extra_len = (int)p_input[input_size-1];
 	p_input.resize(input_size-1);
+	
 	input_size = p_input.size();
 	uint8_t output[input_size];
-	
-	int extra_len = (int)p_input[input_size-1];
 
 	mbedtls_aes_init( &aes_ctx );
 
@@ -171,9 +172,8 @@ Vector<uint8_t> Cripter::cbc_decrypt(Vector<uint8_t> p_input, String p_key){
 
 	ERR_FAIL_COND_V_MSG(mbedtls_erro, ret, error_text + itos(mbedtls_erro));
 
-	ret.resize(input_size);
-	memcpy(ret.ptrw(), output, input_size);
-	ret.resize(input_size-extra_len);
+	ret.resize(input_size - extra_len);
+	memcpy(ret.ptrw(), output, input_size - extra_len);
 	return ret;
 }
 
@@ -265,7 +265,7 @@ Vector<uint8_t> Cripter::rsa_decrypt(Vector<uint8_t> p_input, String p_key_path,
 }
 
 
-int Cripter::check_keys_pair(String p_private_key_path, String p_public_key_path){
+int Cripter::keys_match_check(String p_private_key_path, String p_public_key_path){
 
 	String error_text;
 	const char *private_key_path = p_private_key_path.utf8().get_data();
@@ -308,20 +308,19 @@ String Cripter::show_error(int mbedtls_erro, const char* p_function){
 
 
 void Cripter::_bind_methods(){
-	ClassDB::bind_method(D_METHOD("gcm_encrypt", "Encrypt data", "Password", "Additional Data"),&Cripter::gcm_encrypt);
-	ClassDB::bind_method(D_METHOD("gcm_decrypt", "Decrypt data", "Password", "Additional Data"),&Cripter::gcm_decrypt);
+	ClassDB::bind_method(D_METHOD("gcm_encrypt", "Encrypt data", "Password", "Additional Data"),&Cripter::gcm_encrypt, DEFVAL(String()));
+	ClassDB::bind_method(D_METHOD("gcm_decrypt", "Decrypt data", "Password", "Additional Data"),&Cripter::gcm_decrypt, DEFVAL(String()));
 	ClassDB::bind_method(D_METHOD("cbc_encrypt", "Encrypt data", "Password"),&Cripter::cbc_encrypt);
 	ClassDB::bind_method(D_METHOD("cbc_decrypt", "Decrypt data", "Password"),&Cripter::cbc_decrypt);
 	ClassDB::bind_method(D_METHOD("rsa_encrypt", "Encrypt data", "Private key path"),&Cripter::rsa_encrypt);
 	ClassDB::bind_method(D_METHOD("rsa_decrypt", "Decrypt data", "Public key path", "Password"),&Cripter::rsa_decrypt, DEFVAL(String()));
 	
-	ClassDB::bind_method(D_METHOD("check_keys_pair", "Private key path", "Public key path"),&Cripter::check_keys_pair);
+	ClassDB::bind_method(D_METHOD("keys_match_check", "Private key path", "Public key path"),&Cripter::keys_match_check);
 }
 
 Cripter::Cripter(){
 }
 Cripter::~Cripter(){
 }
-
 
 /*cripter.cpp*/

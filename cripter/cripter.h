@@ -2,17 +2,13 @@
 #ifndef CRIPTER_H
 #define CRIPTER_H
 
-
-
-#include "core/version_generated.gen.h"
-
-#if VERSION_MAJOR == 4
+#ifdef GD4
 	#include "core/object/ref_counted.h"
 #else
 	#include "core/reference.h"
-	#include "core/pool_vector.h"
 #endif
 
+#include "core/io/marshalls.h"
 
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/entropy.h>
@@ -24,8 +20,7 @@
 
 #pragma once
 
-
-#if VERSION_MAJOR == 4
+#ifdef GD4
 class Cripter : public RefCounted{
 	GDCLASS(Cripter, RefCounted);
 	
@@ -34,7 +29,7 @@ class Cripter : public Reference {
 	GDCLASS(Cripter,Reference);
 
 #endif
-
+	
 private:
 	mbedtls_aes_context aes_ctx;
 	mbedtls_gcm_context gcm_ctx;
@@ -44,11 +39,13 @@ private:
 
 	String show_error(int p_error, const char* p_function);
 
+
 protected:
 	static void _bind_methods();
 
 
 public:
+	int keys_match_check(String p_private_key_path, String p_public_key_path);
 	Vector<uint8_t> gcm_encrypt(Vector<uint8_t> p_input, String p_key, String p_add = String());
 	Vector<uint8_t> gcm_decrypt(Vector<uint8_t> p_input, String p_key, String p_add = String());
 	Vector<uint8_t> cbc_encrypt(Vector<uint8_t> p_input, String p_key);
@@ -56,36 +53,20 @@ public:
 	Vector<uint8_t> rsa_encrypt(Vector<uint8_t> p_input, String p_key_path);
 	Vector<uint8_t> rsa_decrypt(Vector<uint8_t> p_input, String p_key_path, String p_password = String());
 
-	int check_keys_pair(String p_private_key_path, String p_public_key_path);
-	
 	Cripter();
 	~Cripter();
 };
 
 
-
-//check_key_type
-
-#endif /*cripter.h*/
-
-
+#endif 
+/*cripter.h*/
 
 
 /*
-#ifdef GODOT4
+#ifdef GD4
 	core_bind::Marshalls *_marshalls = memnew(core_bind::Marshalls);
 #else
-
 	_Marshalls *_marshalls = memnew(_Marshalls);
-
-#endif
-*/
-
-
-/*
-#ifdef GODOT4
-
-#else	
 
 #endif
 */
