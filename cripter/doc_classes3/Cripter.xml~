@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Cripter" inherits="Reference" version="3.5" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+		<link title="Exemples for Godot 3">https://github.com/Malkverbena/cripter/tree/master/Cripter_Exemple_GD3</link>
+	</tutorials>
+	<methods>
+		<method name="cbc_decrypt">
+			<return type="PoolByteArray" />
+			<argument index="0" name="Decrypt data" type="PoolByteArray" />
+			<argument index="1" name="Password" type="String" />
+			<description>
+				Decrypt data using CBC algorithm.
+				Returns a new [PackedByteArray] with the data decrypted. The Password used to decrypt the data must be the same as the one used to encrypt.
+			</description>
+		</method>
+		<method name="cbc_encrypt">
+			<return type="PoolByteArray" />
+			<argument index="0" name="Encrypt data" type="PoolByteArray" />
+			<argument index="1" name="Password" type="String" />
+			<description>
+				Encrypt data using CBC algorithm.
+				Returns a new [PackedByteArray] with the data encrypted.
+			</description>
+		</method>
+		<method name="check_keys_pair">
+			<return type="int" />
+			<argument index="0" name="Private key path" type="String" />
+			<argument index="1" name="Public key path" type="String" />
+			<description>
+				Check if public and private keys are relative to each other.
+			</description>
+		</method>
+		<method name="gcm_decrypt">
+			<return type="PoolByteArray" />
+			<argument index="0" name="Decrypt data" type="PoolByteArray" />
+			<argument index="1" name="Password" type="String" />
+			<argument index="2" name="Additional Data" type="String" />
+			<description>
+				Decrypt data using GCM algorithm.
+				Returns a new [PackedByteArray] with the data decrypted. The password used to decrypt the data must be the same as the one used to encrypt. An additional string can be used to encrypt data.
+			</description>
+		</method>
+		<method name="gcm_encrypt">
+			<return type="PoolByteArray" />
+			<argument index="0" name="Encrypt data" type="PoolByteArray" />
+			<argument index="1" name="Password" type="String" />
+			<argument index="2" name="Additional Data" type="String" />
+			<description>
+				Decrypt data using GCM algorithm.
+				Returns a new [PackedByteArray] with the data encrypted. An additional string can be used to encrypt data.
+			</description>
+		</method>
+		<method name="rsa_decrypt">
+			<return type="PoolByteArray" />
+			<argument index="0" name="Decrypt data" type="PoolByteArray" />
+			<argument index="1" name="Public key path" type="String" />
+			<argument index="2" name="Password" type="String" default="&quot;&quot;" />
+			<description>
+				Decrypt data using RSA algorithm.
+				Returns a new [PackedByteArray] with the data decrypted. An SSH key pair is required to perform encryption and decryption using this algorithm. If you are using a encrypted private key the password will be required.
+			</description>
+		</method>
+		<method name="rsa_encrypt">
+			<return type="PoolByteArray" />
+			<argument index="0" name="Encrypt data" type="PoolByteArray" />
+			<argument index="1" name="Private key path" type="String" />
+			<description>
+				Decrypt data using RSA algorithm.
+				Returns a new [PackedByteArray] with the data encrypted. An SSH key pair is required to perform encryption and decryption using this algorithm.
+			</description>
+		</method>
+	</methods>
+	<constants>
+	</constants>
+</class>

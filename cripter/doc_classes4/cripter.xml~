@@ -1,35 +1,80 @@
 <class name="Cripter" inherits="RefCounted" version="0.1">
-
 	<brief_description>
 		Encryption functions for Godot Engine.
 	</brief_description>
-
 	<description>
 		This module allows you to easily encrypt and decrypt data.
 	</description>
-   
-    <tutorials>
-        <link title="Custom drawing in 2D">https://docs.godotengine.org/en/latest/tutorials/2d/custom_drawing_in_2d.html</link>
-        <link title="All 2D Demos">https://github.com/godotengine/godot-demo-projects/tree/master/2d</link>
-    </tutorials>
-
-
-
-    <methods>
-   
+	<tutorials>
+		<link title="Custom drawing in 2D">https://docs.godotengine.org/en/latest/tutorials/2d/custom_drawing_in_2d.html</link>
+	</tutorials>
+	<methods>
 		<method name="cbc_encrypt">
 			<return type="PackedByteArray" />
-			<argument index="0" name="Encrypt data" type="int" default="0" />
-			<argument index="1" name="out_bandwidth" type="int" default="0" />
+			<argument index="0" name="Encrypt data" type="PackedByteArray" />
+			<argument index="1" name="Password" type="String" />
 			<description>
-				Adjusts the bandwidth limits of a host.
+				Encrypt data using CBC algorithm.
+				Returns a new [PackedByteArray] with the data encrypted.
 			</description>
 		</method>
-   
-   
-   
-    </methods>
-
-
+		<method name="cbc_decrypt">
+			<return type="PackedByteArray" />
+			<argument index="0" name="Encrypt data" type="PackedByteArray" />
+			<argument index="1" name="Password" type="String" />
+			<description>
+				Decrypt data using CBC algorithm.
+				Returns a new [PackedByteArray] with the data decrypted. The Password used to decrypt the data must be the same as the one used to encrypt.
+			</description>
+		</method> 
+		<method name="gcm_encrypt">
+			<return type="PackedByteArray" />
+			<argument index="0" name="Encrypt data" type="PackedByteArray" />
+			<argument index="1" name="Password" type="String" />
+			<argument index="2" name="Additional Data" type="String" default="" />
+			<description>
+				Decrypt data using GCM algorithm.
+				Returns a new [PackedByteArray] with the data encrypted. An additional string can be used to encrypt data.
+			</description>
+		</method> 
+		<method name="gcm_decrypt">
+			<return type="PackedByteArray" />
+			<argument index="0" name="Encrypt data" type="PackedByteArray" />
+			<argument index="1" name="Password" type="String" />
+			<argument index="2" name="Additional Data" type="String" default="" />
+			<description>
+				Decrypt data using GCM algorithm.
+				Returns a new [PackedByteArray] with the data decrypted. The password used to decrypt the data must be the same as the one used to encrypt. An additional string can be used to encrypt data.
+			</description>
+		</method> 
+ 		<method name="rsa_encrypt">
+			<return type="PackedByteArray" />
+			<argument index="0" name="Encrypt data" type="PackedByteArray" />
+			<argument index="1" name="Public key path" type="String" />
+			<description>
+				Decrypt data using RSA algorithm.
+				Returns a new [PackedByteArray] with the data encrypted. An SSH key pair is required to perform encryption and decryption using this algorithm.
+			</description>
+		</method> 
+ 		<method name="rsa_decrypt">
+			<return type="PackedByteArray" />
+			<argument index="0" name="Encrypt data" type="PackedByteArray" />
+			<argument index="1" name="Private key path" type="String" />
+			<argument index="2" name="Password" type="String" />
+			<description>
+				Decrypt data using RSA algorithm.
+				Returns a new [PackedByteArray] with the data decrypted. An SSH key pair is required to perform encryption and decryption using this algorithm. If you are using a encrypted private key the password will be required.
+			</description>
+		</method> 
+		<method name="keys_match_check">
+			<return type="PackedByteArray" />
+			<argument index="1" name="Private key path" type="String" />
+			<argument index="1" name="Public key path" type="String" />
+			<description>
+				Check if public and private keys are relative to each other.
+			</description>
+		</method>
+	</methods>
 </class>
+
 

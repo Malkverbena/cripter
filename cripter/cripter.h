@@ -45,13 +45,13 @@ protected:
 
 
 public:
-	int keys_match_check(String p_private_key_path, String p_public_key_path);
-	Vector<uint8_t> gcm_encrypt(Vector<uint8_t> p_input, String p_key, String p_add = String());
-	Vector<uint8_t> gcm_decrypt(Vector<uint8_t> p_input, String p_key, String p_add = String());
 	Vector<uint8_t> cbc_encrypt(Vector<uint8_t> p_input, String p_key);
 	Vector<uint8_t> cbc_decrypt(Vector<uint8_t> p_input, String p_key);
+	Vector<uint8_t> gcm_encrypt(Vector<uint8_t> p_input, String p_key, String p_add = String());
+	Vector<uint8_t> gcm_decrypt(Vector<uint8_t> p_input, String p_key, String p_add = String());
 	Vector<uint8_t> rsa_encrypt(Vector<uint8_t> p_input, String p_key_path);
 	Vector<uint8_t> rsa_decrypt(Vector<uint8_t> p_input, String p_key_path, String p_password = String());
+	int keys_match_check(String p_private_key_path, String p_public_key_pathm, String p_password = String());
 
 	Cripter();
 	~Cripter();
@@ -60,14 +60,3 @@ public:
 
 #endif 
 /*cripter.h*/
-
-
-/*
-#ifdef GD4
-	core_bind::Marshalls *_marshalls = memnew(core_bind::Marshalls);
-#else
-	_Marshalls *_marshalls = memnew(_Marshalls);
-
-#endif
-*/
-
