@@ -2,73 +2,62 @@
 #ifndef CRIPTER_H
 #define CRIPTER_H
 
-#ifdef GD4
-	#include "core/object/ref_counted.h"
-#else
-	#include "core/reference.h"
-#endif
-
 #include "core/io/marshalls.h"
+#include "core/object/ref_counted.h"
+#include "core/string/print_string.h"
+#include "thirdparty/mbedtls/include/mbedtls/error.h"
 
-#include <mbedtls/ctr_drbg.h>
-#include <mbedtls/entropy.h>
-#include <mbedtls/pk.h>
-#include <mbedtls/rsa.h>
-#include <mbedtls/aes.h>
-#include <mbedtls/gcm.h>
-#include <mbedtls/error.h>
+#include "thirdparty/mbedtls/include/mbedtls/gcm.h"
+#include "thirdparty/mbedtls/include/mbedtls/aes.h"
+#include "thirdparty/mbedtls/include/mbedtls/pk.h"
+#include "thirdparty/mbedtls/include/mbedtls/ctr_drbg.h"
+#include "thirdparty/mbedtls/include/mbedtls/rsa.h"
+#include "thirdparty/mbedtls/include/mbedtls/entropy.h"
+
+#include "thirdparty/mbedtls/include/mbedtls/error.h"  //  ---  Desenvolver   ---
+
+/*
+#include "thirdparty/mbedtls/include/mbedtls/config.h"
+#include "thirdparty/mbedtls/include/mbedtls/platform.h"
+#include "thirdparty/mbedtls/include/mbedtls/bignum.h"
+*/
+
 
 #pragma once
 
-#ifdef GD4
-class Cripter : public RefCounted{
-	GDCLASS(Cripter, RefCounted);
-	
-#else
-class Cripter : public Reference {
-	GDCLASS(Cripter,Reference);
 
-#endif
-	
+class cripter : public RefCounted{
+	GDCLASS(cripter,RefCounted);
+
+
 private:
-	mbedtls_aes_context aes_ctx;
-	mbedtls_gcm_context gcm_ctx;
-	mbedtls_entropy_context entropy;
-	mbedtls_pk_context key_ctx;
-	mbedtls_ctr_drbg_context ctr_drbg;
-
-	String show_error(int p_error, const char* p_function);
-
+	PackedByteArray encode_var(const Variant p_data) const;
+	Variant decode_var(const PackedByteArray p_data) const;
+	PackedByteArray char2pool(const uint8_t *p_in, const size_t p_size) const;
 
 protected:
 	static void _bind_methods();
 
-
 public:
-	Vector<uint8_t> gcm_encrypt(Vector<uint8_t> p_input, String p_key, String p_add = String());
-	Vector<uint8_t> gcm_decrypt(Vector<uint8_t> p_input, String p_key, String p_add = String());
-	Vector<uint8_t> cbc_encrypt(Vector<uint8_t> p_input, String p_key);
-	Vector<uint8_t> cbc_decrypt(Vector<uint8_t> p_input, String p_key);
-	Vector<uint8_t> rsa_encrypt(Vector<uint8_t> p_input, String p_key_path);
-	Vector<uint8_t> rsa_decrypt(Vector<uint8_t> p_input, String p_key_path, String p_password = String());
+	//CBC
+	PackedByteArray encrypt_byte_CBC(const PackedByteArray p_input, const String p_key) const;
+	PackedByteArray decrypt_byte_CBC(const PackedByteArray p_input, const String p_key) const;
+	PackedByteArray encrypt_var_CBC(const Variant p_input, const String p_key) const;
+	Variant decrypt_var_CBC(const PackedByteArray p_input, const String p_key) const;
+	//GCM
+	PackedByteArray encrypt_byte_GCM(const PackedByteArray p_input, const String p_key, const String p_add = "") const;
+	PackedByteArray decrypt_byte_GCM(const PackedByteArray p_input, const String p_key, const String p_add = "") const;
+	PackedByteArray encrypt_var_GCM(const Variant p_input, const String p_key, const String p_add = "") const;
+	Variant decrypt_var_GCM(const PackedByteArray p_input, const String p_key, const String p_add = "") const;
+	//RSA
+	PackedByteArray encrypt_byte_RSA(const PackedByteArray p_input,  String p_key_path) const;
+	PackedByteArray decrypt_byte_RSA(const PackedByteArray p_input, const String p_key_path, const String p_password) const;
+	PackedByteArray encrypt_var_RSA(const Variant p_input, const String p_key_path) const;
+	Variant decrypt_var_RSA(const PackedByteArray p_input, const String p_key_path, const String p_password) const;
 
-	int check_keys_pair(String p_private_key_path, String p_public_key_path);
-	
-	Cripter();
-	~Cripter();
+	cripter();
 };
 
 
-#endif 
-/*cripter.h*/
-
-
-/*
-#ifdef GD4
-	core_bind::Marshalls *_marshalls = memnew(core_bind::Marshalls);
-#else
-	_Marshalls *_marshalls = memnew(_Marshalls);
-
-#endif
-*/
+#endif /*cripter.h*/
 
