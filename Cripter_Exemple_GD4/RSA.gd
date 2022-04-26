@@ -12,8 +12,8 @@ var rsa_password := "cripter_exemple"
 var key = "My not secret key"
 var cbc_input = var2bytes("aaaaa")
 
-@export_global_file var private_key
-@export_global_file var public_key 
+@export_file var private_key = "res://rsa_keys/rsa_private_key.pem"
+@export_file var public_key = "res://rsa_keys/rsa_public_key.pem"
 
 func _ready():
 	var private_key_path = ProjectSettings.globalize_path(String(private_key))
@@ -21,11 +21,11 @@ func _ready():
 	print("private_key_path: ", private_key_path)
 	print("public_key_path: ", public_key_path)
 
-#	print(cripter.check_keys_pair(private_key_path, public_key_path))
+#	print(cripter.keys_match_check(private_key_path, public_key_path, rsa_password))
 
 	var not_encrypted = var2bytes(data)
 	print("not_encrypted size: ", not_encrypted.size(), " \n=> ",not_encrypted)
-	
+
 	print("=========================\n")
 	var encrypted = cripter.rsa_encrypt(not_encrypted, public_key_path)
 	print("encrypted: ", encrypted.size(), " \n-> ", encrypted)

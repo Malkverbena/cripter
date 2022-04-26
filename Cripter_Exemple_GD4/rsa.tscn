@@ -4,5 +4,5 @@
 
 [node name="RSA" type="Node"]
 script = ExtResource( "1_ncosg" )
-private_key = "/mnt/sda1/WORK4/TESTES/Cripter/rsa_keys/rsa_private_key.pem"
-public_key = "/mnt/sda1/WORK4/TESTES/Cripter/rsa_keys/rsa_public_key.pem"
+private_key = "/mnt/sda1/WORK4/TESTES/Cripter_Exemple_GD4/rsa_keys/rsa_private_key.pem"
+public_key = "/mnt/sda1/WORK4/TESTES/Cripter_Exemple_GD4/rsa_keys/rsa_public_key.pem"
