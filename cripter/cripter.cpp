@@ -58,13 +58,15 @@ Vector<uint8_t> Cripter::gcm_decrypt(Vector<uint8_t> p_input, String p_key, Stri
 	uint8_t output[ size - TAG_SIZE ];
 
 #ifdef GD4
-	Vector<uint8_t> data = (p_input.slice(0, size - TAG_SIZE));
-	Vector<uint8_t> tag = (p_input.slice(size - TAG_SIZE, size));
+	Vector<uint8_t> data = (p_input.slice(0, -TAG_SIZE ));
+	Vector<uint8_t> tag = (p_input.slice( (size - TAG_SIZE), p_input.size() ));
 #else
-	uint8_t _tag[TAG_SIZE];
+
+
+	uint8_t p_tag[TAG_SIZE];
 	Vector<uint8_t> R = p_input;
 	for (int i = 0; i < TAG_SIZE; i++) {
-		_tag[i] = (uint8_t)p_input[ (size - TAG_SIZE) + i];
+		p_tag[i] = (uint8_t)p_input[ (size - TAG_SIZE) + i];
 	}
 	Vector<uint8_t> tag;
 	tag.resize(TAG_SIZE);
