@@ -60,9 +60,8 @@ Vector<uint8_t> Cripter::gcm_decrypt(Vector<uint8_t> p_input, String p_key, Stri
 #ifdef GD4
 	Vector<uint8_t> data = (p_input.slice(0, -TAG_SIZE ));
 	Vector<uint8_t> tag = (p_input.slice( (size - TAG_SIZE), p_input.size() ));
+
 #else
-
-
 	uint8_t p_tag[TAG_SIZE];
 	Vector<uint8_t> R = p_input;
 	for (int i = 0; i < TAG_SIZE; i++) {
@@ -187,7 +186,7 @@ Vector<uint8_t> Cripter::cbc_decrypt(Vector<uint8_t> p_input, String p_key){
 Vector<uint8_t> Cripter::rsa_encrypt(Vector<uint8_t> p_input, String p_key_path){
 	size_t olen = 0;
 	String error_text;
-	uint8_t output[512];
+	uint8_t output[2048];
 	Vector<uint8_t> ret;
 	const char *pers = "rsa_encrypt";
 	const char *key_path = p_key_path.utf8().get_data();
@@ -196,11 +195,13 @@ Vector<uint8_t> Cripter::rsa_encrypt(Vector<uint8_t> p_input, String p_key_path)
 	mbedtls_entropy_init( &entropy );
 	mbedtls_ctr_drbg_init( &ctr_drbg );
 	
+	fflush(stdout);
 	int mbedtls_erro = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char *) pers, strlen( pers )) ;
 	if( mbedtls_erro != OK) {
 		error_text = show_error(mbedtls_erro, "mbedtls_ctr_drbg_seed");  
 	}
-	
+
+	fflush(stdout);
 	if( mbedtls_erro == OK) { 
 		mbedtls_erro = mbedtls_pk_parse_public_keyfile( &key_ctx, key_path);
 	}else{ 
@@ -229,7 +230,7 @@ Vector<uint8_t> Cripter::rsa_decrypt(Vector<uint8_t> p_input, String p_key_path,
 	const char *key_path = p_key_path.utf8().get_data();
 	const char *password = p_password.utf8().get_data();
 	String error_text;
-	uint8_t output[512];
+	uint8_t output[2048];
 	size_t olen = 0;
 	const char *pers = "rsa_decrypt";
 	Vector<uint8_t> ret;
@@ -238,11 +239,13 @@ Vector<uint8_t> Cripter::rsa_decrypt(Vector<uint8_t> p_input, String p_key_path,
 	mbedtls_entropy_init( &entropy );
 	mbedtls_ctr_drbg_init( &ctr_drbg );
 
+	fflush(stdout);
 	int mbedtls_erro = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char *) pers, strlen( pers ));
 	if( mbedtls_erro != OK) {
 		error_text = show_error(mbedtls_erro, "mbedtls_ctr_drbg_seed" );  
 	}
 
+	fflush(stdout);
 	if( mbedtls_erro == OK) { 
 		mbedtls_erro = mbedtls_pk_parse_keyfile( &key_ctx, key_path, password );
 	}else{ 
