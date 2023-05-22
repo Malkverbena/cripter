@@ -13,5 +13,5 @@ config_version=5
 config/name="Cripter Exemple GD4"
 config/description="Exemple of Cripter Module to Godot 4."
 run/main_scene="res://rsa.tscn"
+config/features=PackedStringArray("4.1", "Double Precision")
 config/icon="res://icon.png"
-config/features=PackedStringArray("4.0", "Vulkan Clustered")

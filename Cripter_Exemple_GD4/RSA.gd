@@ -10,7 +10,7 @@ var cripter = Cripter.new()
 
 var rsa_password := "cripter_exemple"
 var key = "My not secret key"
-var cbc_input = var2bytes("aaaaa")
+var cbc_input = var_to_bytes("aaaaa")
 
 @export_file var private_key = "res://rsa_keys/rsa_private_key.pem"
 @export_file var public_key = "res://rsa_keys/rsa_public_key.pem"
@@ -23,7 +23,7 @@ func _ready():
 
 #	print(cripter.keys_match_check(private_key_path, public_key_path, rsa_password))
 
-	var not_encrypted = var2bytes(data)
+	var not_encrypted = var_to_bytes(data)
 	print("not_encrypted size: ", not_encrypted.size(), " \n=> ",not_encrypted)
 
 	print("=========================\n")
@@ -34,5 +34,5 @@ func _ready():
 	var dencrypted = cripter.rsa_decrypt(encrypted, private_key_path, "cripter_exemple")
 	print("decrypted size: ", dencrypted.size(), " \n-> ", dencrypted)
 
-	print( bytes2var(dencrypted))
+	print( bytes_to_var(dencrypted))
 	get_tree().quit()
