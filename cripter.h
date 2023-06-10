@@ -5,21 +5,24 @@
 #ifdef GD4
 	#include "core/object/ref_counted.h"
 	#include "core/io/resource_saver.h"
+	#include "core/io/resource_loader.h"
+	#include <core/config/project_settings.h>
 #else
 	#include "core/reference.h"
 #endif
 
 
-#include <mbedtls/error.h>
-#include <mbedtls/gcm.h>
-#include <mbedtls/ctr_drbg.h>
-#include <mbedtls/pk.h>
-#include <mbedtls/entropy.h>
-#include <mbedtls/ecdsa.h>
 
+
+#include <mbedtls/platform.h>  // remover
+
+#include <mbedtls/error.h>
+#include <mbedtls/entropy.h>
+#include <mbedtls/ctr_drbg.h>
+#include <mbedtls/gcm.h>
+#include <mbedtls/pk.h>
 
 #pragma once
-
 
 #ifdef GD4
 class Cripter : public RefCounted{
@@ -31,85 +34,133 @@ class Cripter : public Reference {
 
 #endif
 
-	
+
 private:
 
-	enum GCMMode {
-		GCM_ENCRYPT = MBEDTLS_GCM_ENCRYPT,
-		GCM_DECRYPT = MBEDTLS_GCM_DECRYPT,
-	};
-
-	Vector<uint8_t> _gcm_crypt(Vector<uint8_t> p_input, String p_password, String p_additional_data, GCMMode mode, int p_rounds);
-
+	static String mbed_error_msn(int mbedtls_erro, const char* p_function);
+	static Dictionary _analize_pk_key(String p_key_path, bool is_private);
 
 
 protected:
+
 	static void _bind_methods();
 
 
 public:
 
+	enum EC_CURVE{};
 
 
+	enum PK_TYPE{
+//		PK_NONE			= MBEDTLS_PK_NONE,
+		PK_RSA			= MBEDTLS_PK_RSA,
+		PK_ECKEY			= MBEDTLS_PK_ECKEY,
+//		PK_ECKEY_DH		= MBEDTLS_PK_ECKEY_DH,
+//		PK_ECDSA			= MBEDTLS_PK_ECDSA,
+//		PK_RSA_ALT		= MBEDTLS_PK_RSA_ALT,
+//		PK_RSASSA_PSS	= MBEDTLS_PK_RSASSA_PSS,
+//		PK_OPAQUE		= MBEDTLS_PK_OPAQUE,
+	};
 
-	// Encrypt using CBC algorithm.
+
+	enum KeySize { // - 
+		BITS_128 = 128,
+		BITS_192 = 192,
+		BITS_256 = 256,
+		BITS_512 = 512,
+		BITS_1024 = 1024,
+		BITS_2048 = 2048,
+		BITS_3072 = 3072,
+		BITS_4096 = 4096,
+		BITS_7680 = 7680,
+		BITS_8192 = 8192,
+	};
+
+	enum Algorithm {
+		EBC,
+		CBC,
+		XTS,
+		CFB128,
+		CFB8,
+		OFB,
+	//	CTR >> CTR is straming orientated. We don't need it now.
+	};
+
+
+/* GCM */
+	// This function performs an encryption using CGM algorithm.
 	// INPUT: is the content to be encrypted.
-	// KEY: is the key in String format.
-	Vector<uint8_t> aes_encrypt(Vector<uint8_t> p_input, String p_password, Algorithm p_algorith = CBC);
+	// PASSWORD: Is the password used to encrypt the data.
+	// ADDITIONAL DATA: An additional and optional data that can be used to encryptation. If te optional data be used to encryptation, the same data must be used to decrypt the content.
+	static Vector<uint8_t> gcm_encrypt(Vector<uint8_t> p_input, String p_password, String p_add = String(), KeySize p_keybits = BITS_256);
 
-	// Decrypt using CBC algorithm.
+	// This function performs a decryption using CGM algorithm.
+	// INPUT: is the content to be dencrypted.
+	// PASSWORD: Is the password used to decrypt the data.
+	// ADDITIONAL DATA: An additional AND optional data used on encryptation data. If the additional data was used to encrypt, the same data must be used to decrypt the content.
+	static Vector<uint8_t> gcm_decrypt(Vector<uint8_t> p_input, String p_password, String p_add = String(), KeySize p_keybits = BITS_256);
+
+
+
+/* AES */
+	// This function performs an AES encryption operation.
 	// INPUT: is the content to be encrypted.
-	// KEY: is the key in String format.
-	Vector<uint8_t> aes_decrypt(Vector<uint8_t> p_input, String p_password, Algorithm p_algorith = CBC);
+	// PASSWORD: Is the password used to encrypt the data.
+	// ALGORITH: The Algorithm used to perform the encryptation
+	static Vector<uint8_t> aes_encrypt(Vector<uint8_t> p_input, String p_password, Algorithm p_algorith = CBC, KeySize p_keybits = BITS_256);
+
+	// This function performs an AES decryption operation.
+	// INPUT: is the content to be dencrypted.
+	// PASSWORD: Is the password used to decrypt the data.
+	// KYBITS: The size of password in bits. Common AES accepts the sizes 128, 192 and 256. XTS is an exception and only accepts the sizes 256 and 512. 
+	// ALGORITH: The Algorithm used to perform the dencryptation
+	static Vector<uint8_t> aes_decrypt(Vector<uint8_t> p_input, String p_password, Algorithm p_algorith = CBC, KeySize p_keybits = BITS_256);
 
 
-	// Encrypt using CGM algorithm.
-	// INPUT: is the content to be encrypted.
-	// KEY: is the key in String format.
-	// TAG: An additional TAG can be used to encrypt data. If a tag is used to encrypt, the same tag must be used to decrypty the content.
-	// RAOUND: The number of key derivation. Higher numbers result in slower passphrase but increased resistance to brute-force password cracking. Must be between 4 and 128.
-	Vector<uint8_t> gcm_encrypt(Vector<uint8_t> p_input, String p_password, String p_additional_data = String(), int p_rounds = 32);
-
-	// Decrypt using CGM algorithm.
-	// INPUT: is the content to be encrypted.
-	// KEY: is the key in String format.
-	// ADDITIONAL DATA: An optional ADDITIONAL DATA used to encrypt data. If the tag was used to encrypt, the same tag must be used to decrypty the content.
-	Vector<uint8_t> gcm_decrypt(Vector<uint8_t> p_input, String p_password, String p_additional_data = String());
-
-
+/* PK */
 	// Generates an RSA PK keypair.  NOTE: The maximum size of the input to be encrypted is limited by the key size in bits.
 	// PATH: path to file to private key.
+	// KEY_NAME: The name of keys pair file.
 	// TYPE: Type of key (RSA or EC).
 	// FORMAT: Format of key (DER or PEM).
-	// SIZE: Bits of the key.
-	//int gen_pk_key(String p_path, RSAType type = PK_RSA, KeyFormat format = PEM, KeySize p_size = BITS_4096);
+	// SIZE: Bits of the key. Acceptable sizes: 1024 till 8196.
+	// EC_CURVE: Curve used on EC keys only.
+	static int gen_pk_key(String p_path, String key_name, PK_TYPE p_type = PK_RSA, KeySize p_keybits = BITS_4096, String ec_curve = "secp521r1");
+
+	// Check if a public-private pair of keys matches. 
+	// NOTE: mbedtls_erro returns a negatine int. Godot error returns a positive int. Valid result returns True or False.
+	// PRIVATE_PATH: Pathto the private key.
+	// PUBLIC_PATH: Pathto the public key.
+	static Variant compare_keys(String p_private_key_path, String p_public_key_path);
+
+	// Return info about the PK keys
+	// KEY_PATH: The path to the key. 
+	static Dictionary analize_pk_key(String p_key_path);
+
+	// Return the ec curves available in your system.  
+	static PackedStringArray get_available_ec_curves();
+
+	// Encrypt using PK_RSA OR PK_ECP. NOTE: The maximum size of data you can encrypt if equal the size of the key in Bytes.
+	// INPUT: The data to beencrypted.
+	// KEY_PATH: The path to the key. 
+	static Vector<uint8_t> pk_encrypt(Vector<uint8_t> p_input, String p_key_path);
+
+	// Decrypt using PK_RSA OR PK_ECP.
+	// INPUT: The data to beencrypted.
+	// KEY_PATH: The path to the key. 
+	static Vector<uint8_t> pk_decrypt(Vector<uint8_t> p_input, String p_key_path);
 
 
 
-	// Encrypt and decrypt using RSA algorithm.
-	//Vector<uint8_t> rsa_encrypt(Vector<uint8_t> p_input, String p_key_path);
-	//Vector<uint8_t> rsa_decrypt(Vector<uint8_t> p_input, String p_key_path, String p_password = String());
-
-	// Encrypt and decrypt using PK algorithm.
-	//Vector<uint8_t> pk_encrypt(Vector<uint8_t> p_input, String p_key_path, String p_password = String());
-	//Vector<uint8_t> pk_decrypt(Vector<uint8_t> p_input, String p_key_path);
-
-	//Checks if the private and public keys match.
-	//int check_keys (String p_private_key_path, String p_public_key_pathm, String p_password = String());
-	
-	// Create RSA key pair
-	// Create_keys();
-	
-	// Get all available information about the last error.
-	// get_last_error();
 
 	Cripter();
 	~Cripter();
+
 };
 
 
-
-
+VARIANT_ENUM_CAST(Cripter::PK_TYPE);
+VARIANT_ENUM_CAST(Cripter::KeySize);
 VARIANT_ENUM_CAST(Cripter::Algorithm);
 
 
