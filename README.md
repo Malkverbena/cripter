@@ -4,15 +4,16 @@ Encryption functions for Godot Engine.
 
 ## Instructions:
 Download or clone the repository to your computer. Copy the cripter folder into the Godot module folder and compile.
-It's expected this module will be compiled in both Godot 3 and Godot 4 without problems. It can detect Godot's version and will do the job. 
+It's expected this module will be compiled in both Godot 4. It can detect Godot's version and will do the job. 
 It is expected that this module can be compiled on all platforms that Godot supports.
 
-There are two examples of identical projects. One for Godot 3 and one for Godot 4. They are in the folders "Cripter_Exemple_GD". 
-
-This module offers encryption using the algorithms: GCM, CBC and RSA. The RSA algorithm is the only one that needs an SSH key pair.
+This module offers encryption using the algorithms: GCM, CBC and RSA. 
+The RSA algorithm is the only one that needs a key pair.
 The example projects has a pair of keys that you can use in your tests.
 DO NOT use the keys in this demo for your project. This is unsafe. Generate your own keys.
 
+## GODOT 3:
+If you are using Godot 3, please use the branch master.
 
 #### To generate an RSA key pair on linux use this commands lines:
 
