@@ -18,11 +18,16 @@ DO NOT use the keys in this demo for your project. This is unsafe. Generate your
 
 Generate the private key:
 
-openssl genrsa -out rsa_private_key.pem -aes256 4096
+openssl genrsa -traditional -out rsa_private_key.pem -aes256 4096
 
 Generate the public key:
 
 openssl rsa -in rsa_private_key.pem -pubout -out rsa_public_key.pem
+
+
+## Usage:
+You don't need instance hte module. All methods are static.
+There is a demo project on the folder.
 
 
 # Disclaimer
