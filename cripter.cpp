@@ -223,6 +223,7 @@ Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password,
 				ERR_FAIL_V_MSG(output, mbed_error_msn(mbedtls_erro, "mbedtls_aes_crypt_ecb"));
 			}
 		}
+		break;
 
 		case CBC:
 		{
@@ -243,6 +244,7 @@ Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password,
 			output.append((uint8_t)extra_len);
 			return output;
 		}
+		break;
 
 		case OFB:
 		{
@@ -255,6 +257,7 @@ Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password,
 				ERR_FAIL_V_MSG(output, mbed_error_msn(mbedtls_erro, "mbedtls_aes_crypt_ofb"));
 			}
 		}
+		break;
 
 		case CFB128:
 		{
@@ -264,6 +267,7 @@ Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password,
 				ERR_FAIL_V_MSG(output, mbed_error_msn(mbedtls_erro, "mbedtls_aes_crypt_cfb128"));
 			}
 		}
+		break;
 
 		case CFB8:
 		{
@@ -273,6 +277,7 @@ Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password,
 				ERR_FAIL_V_MSG(output, mbed_error_msn(mbedtls_erro, "mbedtls_aes_crypt_cfb8"));
 			}
 		}
+		break;
 
 		case XTS:
 		{
@@ -291,6 +296,7 @@ Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password,
 			}
 			mbedtls_aes_xts_free(&xts_ctx);
 		}
+		break;
 
 
 	} // switch case
@@ -366,6 +372,7 @@ Vector<uint8_t> Cripter::aes_decrypt(Vector<uint8_t> p_input, String p_password,
 
 			mbedtls_aes_free(&aes_ctx);
 		}
+		break;
 
 		case CBC:
 		{
@@ -391,6 +398,7 @@ Vector<uint8_t> Cripter::aes_decrypt(Vector<uint8_t> p_input, String p_password,
 			return output;
 
 		}
+		break;
 
 		case OFB:
 		{
@@ -409,6 +417,7 @@ Vector<uint8_t> Cripter::aes_decrypt(Vector<uint8_t> p_input, String p_password,
 
 			mbedtls_aes_free(&aes_ctx);
 		}
+		break;
 
 		case CFB128:
 		{
@@ -426,6 +435,7 @@ Vector<uint8_t> Cripter::aes_decrypt(Vector<uint8_t> p_input, String p_password,
 
 			mbedtls_aes_free(&aes_ctx);
 		}
+		break;
 
 		case CFB8:
 		{
@@ -443,6 +453,7 @@ Vector<uint8_t> Cripter::aes_decrypt(Vector<uint8_t> p_input, String p_password,
 
 			mbedtls_aes_free(&aes_ctx);
 		}
+		break;
 
 		case XTS:
 		{
@@ -467,6 +478,7 @@ Vector<uint8_t> Cripter::aes_decrypt(Vector<uint8_t> p_input, String p_password,
 			memcpy(output.ptrw(), &output_buf, input_size);
 			return output;
 		}
+		break;
 
 	} // switch case
 
