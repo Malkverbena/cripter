@@ -54,9 +54,9 @@ public:
 	enum PK_TYPE{
 //		PK_NONE			= MBEDTLS_PK_NONE,
 		PK_RSA			= MBEDTLS_PK_RSA,
-		PK_ECKEY			= MBEDTLS_PK_ECKEY,
+		PK_ECKEY		= MBEDTLS_PK_ECKEY,
 //		PK_ECKEY_DH		= MBEDTLS_PK_ECKEY_DH,
-//		PK_ECDSA			= MBEDTLS_PK_ECDSA,
+//		PK_ECDSA		= MBEDTLS_PK_ECDSA,
 //		PK_RSA_ALT		= MBEDTLS_PK_RSA_ALT,
 //		PK_RSASSA_PSS	= MBEDTLS_PK_RSASSA_PSS,
 //		PK_OPAQUE		= MBEDTLS_PK_OPAQUE,
@@ -149,9 +149,6 @@ public:
 	// INPUT: The data to beencrypted.
 	// KEY_PATH: The path to the key. 
 	static Vector<uint8_t> pk_decrypt(Vector<uint8_t> p_input, String p_key_path);
-
-
-
 
 	Cripter();
 	~Cripter();

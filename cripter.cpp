@@ -7,6 +7,7 @@
 #define TAG_SIZE  8
 #define EXPONENT 65537
 
+
 // -------------GCM
 
 Vector<uint8_t> Cripter::gcm_encrypt(Vector<uint8_t> p_input, String p_password, String p_add, KeySize p_keybits){
@@ -55,7 +56,6 @@ Vector<uint8_t> Cripter::gcm_encrypt(Vector<uint8_t> p_input, String p_password,
 		ERR_FAIL_V_MSG(output, mbed_error_msn(mbedtls_erro, "mbedtls_gcm_setkey"));
 	}
 
-
 	mbedtls_erro = mbedtls_gcm_crypt_and_tag(&gcm_ctx, MBEDTLS_GCM_ENCRYPT, input_size, p_password.md5_buffer().ptr(), IV_SIZE, add_data, add_len, p_input.ptr(), output_buf, TAG_SIZE, p_tag);
 	if (mbedtls_erro != OK){
 		mbedtls_gcm_free(&gcm_ctx);
@@ -71,6 +71,7 @@ Vector<uint8_t> Cripter::gcm_encrypt(Vector<uint8_t> p_input, String p_password,
 	tag.resize(TAG_SIZE);
 	memcpy(tag.ptrw(), p_tag, TAG_SIZE);
 	output.append_array(tag);
+
 	return output;
 
 }
@@ -91,7 +92,6 @@ Vector<uint8_t> Cripter::gcm_decrypt(Vector<uint8_t> p_input, String p_password,
 	int input_size = p_input.size();
 	Vector<uint8_t> output;
 	uint8_t output_buf[ input_size - TAG_SIZE ];
-
 
 	// Input
 #ifdef GD4
@@ -161,7 +161,6 @@ Vector<uint8_t> Cripter::gcm_decrypt(Vector<uint8_t> p_input, String p_password,
 
 
 
-
 // -------------AES
 
 Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password, Algorithm p_algorith, KeySize p_keybits){
@@ -182,7 +181,6 @@ Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password,
 		WARN_PRINT("XTS algorithm support only supports 256 and 512 bits keys. - Using 512 Bits key size");
 		p_keybits = BITS_512;
 	}
-
 
 	// Input
 	int input_size = p_input.size();
@@ -215,8 +213,7 @@ Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password,
 
 	switch (p_algorith) {
 
-		case EBC:
-		{
+		case EBC: {
 			mbedtls_erro = mbedtls_aes_crypt_ecb(&aes_ctx, MBEDTLS_AES_ENCRYPT, p_input.ptr(), (unsigned char * )&output_buf);
 			if (mbedtls_erro != OK){
 				mbedtls_aes_free(&aes_ctx);
@@ -225,8 +222,7 @@ Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password,
 		}
 		break;
 
-		case CBC:
-		{
+		case CBC: {
 			// Extra len >> CBC operates on full blocks. The input size must be a multiple of 16 Bytes. It feels the input and with zeros untill the input size be a multiple of 16.
 			int extra_len = 0;
 			if (input_size % 16) {
@@ -246,8 +242,7 @@ Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password,
 		}
 		break;
 
-		case OFB:
-		{
+		case OFB: {
 			// For the OFB mode, the initialisation vector must be unique every encryption operation. Reuse of an initialisation vector will compromise security.
 			// The password shold not be the same in each encryption operation coz the vector is made using with the password.
 			unsigned char iv2[16] = { 0 };
@@ -259,8 +254,7 @@ Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password,
 		}
 		break;
 
-		case CFB128:
-		{
+		case CFB128: {
 			mbedtls_erro = mbedtls_aes_crypt_cfb128(&aes_ctx, MBEDTLS_AES_ENCRYPT, input_size, &iv_offset, iv, p_input.ptr(), (unsigned char * )&output_buf);
 			if (mbedtls_erro != OK){
 				mbedtls_aes_free(&aes_ctx);
@@ -269,8 +263,7 @@ Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password,
 		}
 		break;
 
-		case CFB8:
-		{
+		case CFB8: {
 			mbedtls_erro = mbedtls_aes_crypt_cfb8(&aes_ctx, MBEDTLS_AES_ENCRYPT, input_size, iv, p_input.ptr(), (unsigned char * )&output_buf);
 			if (mbedtls_erro != OK){
 				mbedtls_aes_free(&aes_ctx);
@@ -279,8 +272,7 @@ Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password,
 		}
 		break;
 
-		case XTS:
-		{
+		case XTS: {
 			mbedtls_aes_xts_context xts_ctx;
 			mbedtls_aes_xts_init(&xts_ctx);
 			mbedtls_erro = mbedtls_aes_xts_setkey_enc( &xts_ctx, password, p_keybits );
@@ -297,8 +289,6 @@ Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password,
 			mbedtls_aes_xts_free(&xts_ctx);
 		}
 		break;
-
-
 	} // switch case
 
 
@@ -306,8 +296,8 @@ Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password,
 	mbedtls_aes_free( &aes_ctx );
 	output.resize(input_size);
 	memcpy(output.ptrw(), &output, input_size);
-	return output;
 
+	return output;
 }
 
 
@@ -354,10 +344,8 @@ Vector<uint8_t> Cripter::aes_decrypt(Vector<uint8_t> p_input, String p_password,
 	mbedtls_aes_context aes_ctx;
 	mbedtls_aes_init(&aes_ctx);
 
-
 	switch (p_algorith) {
-		case EBC:
-		{
+		case EBC: {
 			mbedtls_erro = mbedtls_aes_setkey_dec( &aes_ctx, password, p_keybits);
 			if (mbedtls_erro != OK){
 				mbedtls_aes_free(&aes_ctx);
@@ -374,8 +362,7 @@ Vector<uint8_t> Cripter::aes_decrypt(Vector<uint8_t> p_input, String p_password,
 		}
 		break;
 
-		case CBC:
-		{
+		case CBC: {
 			uint8_t extra_len = p_input[input_size-1];
 			p_input.resize(input_size-1);
 
@@ -400,8 +387,7 @@ Vector<uint8_t> Cripter::aes_decrypt(Vector<uint8_t> p_input, String p_password,
 		}
 		break;
 
-		case OFB:
-		{
+		case OFB: {
 			mbedtls_erro = mbedtls_aes_setkey_dec( &aes_ctx, password, (unsigned int)p_keybits);
 			if (mbedtls_erro != OK){
 				mbedtls_aes_free(&aes_ctx);
@@ -419,8 +405,7 @@ Vector<uint8_t> Cripter::aes_decrypt(Vector<uint8_t> p_input, String p_password,
 		}
 		break;
 
-		case CFB128:
-		{
+		case CFB128: {
 			mbedtls_erro = mbedtls_aes_setkey_enc( &aes_ctx, password, p_keybits );
 			if (mbedtls_erro != OK){
 				mbedtls_aes_free(&aes_ctx);
@@ -437,8 +422,7 @@ Vector<uint8_t> Cripter::aes_decrypt(Vector<uint8_t> p_input, String p_password,
 		}
 		break;
 
-		case CFB8:
-		{
+		case CFB8: {
 			mbedtls_erro = mbedtls_aes_setkey_enc( &aes_ctx, password, p_keybits );
 			if (mbedtls_erro != OK){
 				mbedtls_aes_free(&aes_ctx);
@@ -455,8 +439,7 @@ Vector<uint8_t> Cripter::aes_decrypt(Vector<uint8_t> p_input, String p_password,
 		}
 		break;
 
-		case XTS:
-		{
+		case XTS: {
 			unsigned char data_unit[16] = {0};
 			mbedtls_aes_xts_context xts_ctx;
 			mbedtls_aes_xts_init(&xts_ctx);
@@ -487,7 +470,6 @@ Vector<uint8_t> Cripter::aes_decrypt(Vector<uint8_t> p_input, String p_password,
 	return output;
 
 }
-
 
 
 // -------------ASSIMETRIC
@@ -557,14 +539,12 @@ int Cripter::gen_pk_key(String p_path, String key_name, PK_TYPE p_type, KeySize 
 		}
 	}
 
-
 	// Output Buffer
 	unsigned char pri_output_buf[16000];
 	unsigned char pub_output_buf[16000];
 
 	memset(pri_output_buf, 0, sizeof(pri_output_buf));
 	memset(pub_output_buf, 0, sizeof(pub_output_buf));
-
 
 	// Write keys
 	mbedtls_erro = mbedtls_pk_write_key_pem(&pk_key, pri_output_buf, sizeof(pri_output_buf));
@@ -588,7 +568,6 @@ int Cripter::gen_pk_key(String p_path, String key_name, PK_TYPE p_type, KeySize 
 	mbedtls_ctr_drbg_free(&ctr_drbg);
 	mbedtls_entropy_free(&entropy);
 
-
 	// Save Private
 	String private_path = p_path + "/" + key_name + ".key";
 	Ref<FileAccess> f_private = FileAccess::open(private_path, FileAccess::WRITE);
@@ -597,7 +576,6 @@ int Cripter::gen_pk_key(String p_path, String key_name, PK_TYPE p_type, KeySize 
 	size_t pri_len = strlen((char *)pri_output_buf);
 	f_private->store_buffer(pri_output_buf, pri_len);
 	mbedtls_platform_zeroize(pri_output_buf, sizeof(pri_output_buf));
-
 
 	// Save Public
 	String public_path = p_path + "/" + key_name + ".pub";
@@ -616,7 +594,6 @@ int Cripter::gen_pk_key(String p_path, String key_name, PK_TYPE p_type, KeySize 
 
 Variant Cripter::compare_keys(String p_private_key_path, String p_public_key_path){
 
-
 	// Open private key
 	Ref<FileAccess> f_priv = FileAccess::open(p_private_key_path, FileAccess::READ);
 	ERR_FAIL_COND_V_MSG(f_priv.is_null(), ERR_INVALID_PARAMETER, "Cannot open private key file '" + p_private_key_path + "'.");
@@ -626,7 +603,6 @@ Variant Cripter::compare_keys(String p_private_key_path, String p_public_key_pat
 	private_key.resize(f_priv_len + 1);
 	f_priv->get_buffer(private_key.ptrw(), f_priv_len);
 	private_key.write[f_priv_len] = 0; // string terminator
-
 
 	// Open public key
 	Ref<FileAccess> f_pub = FileAccess::open(p_public_key_path, FileAccess::READ);
@@ -638,13 +614,11 @@ Variant Cripter::compare_keys(String p_private_key_path, String p_public_key_pat
 	f_pub->get_buffer(public_key.ptrw(), f_pub_len);
 	public_key.write[f_pub_len] = 0; // string terminator
 
-
 	// Init Context
 	int mbedtls_erro;
 	mbedtls_pk_context private_ctx, public_ctx;
 	mbedtls_pk_init(&private_ctx);
 	mbedtls_pk_init(&public_ctx);
-
 
 	// Parse private key
 	mbedtls_erro = mbedtls_pk_parse_key(&private_ctx, private_key.ptr(), private_key.size(), nullptr, 0);
@@ -671,7 +645,6 @@ Variant Cripter::compare_keys(String p_private_key_path, String p_public_key_pat
 		mbedtls_pk_free(&public_ctx);
 		ERR_FAIL_V_MSG(mbedtls_erro, mbed_error_msn(mbedtls_erro, "mbedtls_pk_check_pair"));
 	}
-
 
 	// Clean up
 	mbedtls_pk_free( &private_ctx);
@@ -704,7 +677,6 @@ Vector<uint8_t> Cripter::pk_encrypt(Vector<uint8_t> p_input, String p_key_path){
 	mbedtls_pk_init(&pk_key);
 	mbedtls_entropy_init(&entropy);
 	mbedtls_ctr_drbg_init(&ctr_drbg);
-
 
 	// Gears
 	mbedtls_erro = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char *) pers, strlen( pers )) ;
@@ -776,9 +748,7 @@ Vector<uint8_t> Cripter::pk_decrypt(Vector<uint8_t> p_input, String p_key_path){
 	mbedtls_entropy_init( &entropy );
 	mbedtls_ctr_drbg_init( &ctr_drbg );
 
-
 	// Gears
-
 	mbedtls_erro = mbedtls_pk_parse_keyfile( &pk_key, key_path, nullptr);
 	if (mbedtls_erro != OK){
 		mbedtls_pk_free(&pk_key);
@@ -807,7 +777,6 @@ Vector<uint8_t> Cripter::pk_decrypt(Vector<uint8_t> p_input, String p_key_path){
 		mbedtls_entropy_free(&entropy);
 		ERR_FAIL_V_MSG(output, mbed_error_msn(mbedtls_erro, "mbedtls_pk_decrypt"));
 	}
-
 
 	// Clean up
 	mbedtls_pk_free(&pk_key);
@@ -898,7 +867,6 @@ PackedStringArray Cripter::get_available_ec_curves(){
 }
 
 
-
 String Cripter::mbed_error_msn(int mbedtls_erro, const char* p_function){
 	char mbedtls_erro_text[256];
 	mbedtls_strerror( mbedtls_erro, mbedtls_erro_text, sizeof(mbedtls_erro_text) );
@@ -911,16 +879,16 @@ String Cripter::mbed_error_msn(int mbedtls_erro, const char* p_function){
 
 void Cripter::_bind_methods(){
 
-	ClassDB::bind_static_method("Cripter", D_METHOD("gcm_encrypt", "plaintext", "password", "additional data", "key bits"),&Cripter::gcm_encrypt, DEFVAL(String()), DEFVAL(BITS_256));
-	ClassDB::bind_static_method("Cripter", D_METHOD("gcm_decrypt", "ciphertext", "password", "additional data", "key bits"),&Cripter::gcm_decrypt, DEFVAL(String()), DEFVAL(BITS_256));
+	ClassDB::bind_static_method("Cripter", D_METHOD("gcm_encrypt", "plaintext", "password", "additional data", "key bits"),&Cripter::gcm_encrypt, DEFVAL(String()), DEFVAL(Cripter::BITS_256));
+	ClassDB::bind_static_method("Cripter", D_METHOD("gcm_decrypt", "ciphertext", "password", "additional data", "key bits"),&Cripter::gcm_decrypt, DEFVAL(String()), DEFVAL(Cripter::BITS_256));
 
-	ClassDB::bind_static_method("Cripter", D_METHOD("aes_encrypt", "plaintext", "password", "algorithm", "key bits"),&Cripter::aes_encrypt, DEFVAL(CBC), DEFVAL(BITS_256));
-	ClassDB::bind_static_method("Cripter", D_METHOD("aes_decrypt", "ciphertext", "password", "algorithm", "key bits"),&Cripter::aes_decrypt, DEFVAL(CBC), DEFVAL(BITS_256));
+	ClassDB::bind_static_method("Cripter", D_METHOD("aes_encrypt", "plaintext", "password", "algorithm", "key bits"),&Cripter::aes_encrypt, DEFVAL(Cripter::CBC), DEFVAL(Cripter::BITS_256));
+	ClassDB::bind_static_method("Cripter", D_METHOD("aes_decrypt", "ciphertext", "password", "algorithm", "key bits"),&Cripter::aes_decrypt, DEFVAL(Cripter::CBC), DEFVAL(Cripter::BITS_256));
 
 	ClassDB::bind_static_method("Cripter", D_METHOD("pk_encrypt", "plaintext", "public key path"), &Cripter::pk_encrypt);
 	ClassDB::bind_static_method("Cripter", D_METHOD("pk_decrypt", "ciphertext", "private key path"), &Cripter::pk_decrypt);
 
-	ClassDB::bind_static_method("Cripter", D_METHOD("gen_pk_key", "path", "key name", "type", "bits", "ec_curve"), &Cripter::gen_pk_key, DEFVAL(PK_RSA), DEFVAL(BITS_2048), DEFVAL(String("secp521r1")));
+	ClassDB::bind_static_method("Cripter", D_METHOD("gen_pk_key", "path", "key name", "type", "bits", "ec_curve"), &Cripter::gen_pk_key, DEFVAL(Cripter::PK_RSA), DEFVAL(Cripter::BITS_2048), DEFVAL(String("secp521r1")));
 	ClassDB::bind_static_method("Cripter", D_METHOD("compare_keys", "private key path", "public key path"), &Cripter::compare_keys);
 	ClassDB::bind_static_method("Cripter", D_METHOD("analize_pk_key", "key path"), &Cripter::analize_pk_key);
 	ClassDB::bind_static_method("Cripter", D_METHOD("get_available_ec_curves"), &Cripter::get_available_ec_curves);
