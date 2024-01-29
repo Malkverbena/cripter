@@ -134,7 +134,7 @@ Vector<uint8_t> Cripter::gcm_decrypt(Vector<uint8_t> p_input, String p_password,
 	String random_pass = p_password;
 	for (int i = 0; i < 256; i++) {
 		random_pass = random_pass.md5_text();
-	}
+	};
 	unsigned char * password = (unsigned char *)random_pass.utf8().get_data();
 
 	// Gears running
@@ -142,13 +142,13 @@ Vector<uint8_t> Cripter::gcm_decrypt(Vector<uint8_t> p_input, String p_password,
 	if (mbedtls_erro != OK){
 		mbedtls_gcm_free(&gcm_ctx);
 		ERR_FAIL_V_MSG(output, mbed_error_msn(mbedtls_erro, "mbedtls_gcm_setkey"));
-	}
+	};
 
 	mbedtls_erro = mbedtls_gcm_auth_decrypt(&gcm_ctx, data.size(), p_password.md5_buffer().ptr(), IV_SIZE, add_data, add_len, tag.ptr(), TAG_SIZE, data.ptr(), output_buf);
 	if (mbedtls_erro != OK){
 		mbedtls_gcm_free(&gcm_ctx);
 		ERR_FAIL_V_MSG(output, mbed_error_msn(mbedtls_erro, "mbedtls_gcm_auth_decrypt"));
-	}
+	};
 
 	mbedtls_gcm_free(&gcm_ctx);
 
@@ -165,7 +165,7 @@ Vector<uint8_t> Cripter::gcm_decrypt(Vector<uint8_t> p_input, String p_password,
 
 Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password, Algorithm p_algorith, KeySize p_keybits){
 
-	if (p_algorith != XTS and p_keybits < BITS_128){
+	if ((p_algorith != XTS) and (p_keybits < BITS_128)){
 		WARN_PRINT("Most AES algorithms support 128,192 and 256 bits keys, with the exception of XTS, which only supports 256 and 512 bits keys. - Using 128 Bits key size");
 		p_keybits = BITS_128;
 	}
@@ -197,7 +197,7 @@ Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password,
 	String random_pass = p_password;
 	for (int i = 0; i < 256; i++) {
 		random_pass = random_pass.md5_text();
-	}
+	};
 	const unsigned char * password = (unsigned char *)random_pass.utf8().get_data();
 
 	// Init Context
@@ -209,7 +209,7 @@ Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password,
 	if (mbedtls_erro != OK){
 		mbedtls_aes_free(&aes_ctx);
 		ERR_FAIL_V_MSG(output, mbed_error_msn(mbedtls_erro, "mbedtls_aes_setkey_enc"));
-	}
+	};
 
 	switch (p_algorith) {
 
@@ -289,7 +289,7 @@ Vector<uint8_t> Cripter::aes_encrypt(Vector<uint8_t> p_input, String p_password,
 			mbedtls_aes_xts_free(&xts_ctx);
 		}
 		break;
-	} // switch case
+	}; // switch case
 
 
 	// Constructing
@@ -318,7 +318,7 @@ Vector<uint8_t> Cripter::aes_decrypt(Vector<uint8_t> p_input, String p_password,
 	else if (p_algorith == XTS and p_keybits > BITS_512){
 		WARN_PRINT("XTS algorithm support only supports 256 and 512 bits keys. - Using 512 Bits key size");
 		p_keybits = BITS_512;
-	}
+	};
 
 	// Input
 	int input_size = p_input.size();
@@ -336,7 +336,7 @@ Vector<uint8_t> Cripter::aes_decrypt(Vector<uint8_t> p_input, String p_password,
 	String random_pass = p_password;
 	for (int i = 0; i < 256; i++) {
 		random_pass = random_pass.md5_text();
-	}
+	};
 	const unsigned char * password = (unsigned char *)random_pass.utf8().get_data();
 
 	// Init Context
@@ -879,16 +879,16 @@ String Cripter::mbed_error_msn(int mbedtls_erro, const char* p_function){
 
 void Cripter::_bind_methods(){
 
-	ClassDB::bind_static_method("Cripter", D_METHOD("gcm_encrypt", "plaintext", "password", "additional data", "key bits"),&Cripter::gcm_encrypt, DEFVAL(String()), DEFVAL(Cripter::BITS_256));
-	ClassDB::bind_static_method("Cripter", D_METHOD("gcm_decrypt", "ciphertext", "password", "additional data", "key bits"),&Cripter::gcm_decrypt, DEFVAL(String()), DEFVAL(Cripter::BITS_256));
+	ClassDB::bind_static_method("Cripter", D_METHOD("gcm_encrypt", "plaintext", "password", "additional data", "key bits"),&Cripter::gcm_encrypt, DEFVAL(String()), DEFVAL(BITS_256));
+	ClassDB::bind_static_method("Cripter", D_METHOD("gcm_decrypt", "ciphertext", "password", "additional data", "key bits"),&Cripter::gcm_decrypt, DEFVAL(String()), DEFVAL(BITS_256));
 
-	ClassDB::bind_static_method("Cripter", D_METHOD("aes_encrypt", "plaintext", "password", "algorithm", "key bits"),&Cripter::aes_encrypt, DEFVAL(Cripter::CBC), DEFVAL(Cripter::BITS_256));
-	ClassDB::bind_static_method("Cripter", D_METHOD("aes_decrypt", "ciphertext", "password", "algorithm", "key bits"),&Cripter::aes_decrypt, DEFVAL(Cripter::CBC), DEFVAL(Cripter::BITS_256));
+	ClassDB::bind_static_method("Cripter", D_METHOD("aes_encrypt", "plaintext", "password", "algorithm", "key bits"),&Cripter::aes_encrypt, DEFVAL(CBC), DEFVAL(BITS_256));
+	ClassDB::bind_static_method("Cripter", D_METHOD("aes_decrypt", "ciphertext", "password", "algorithm", "key bits"),&Cripter::aes_decrypt, DEFVAL(CBC), DEFVAL(BITS_256));
 
 	ClassDB::bind_static_method("Cripter", D_METHOD("pk_encrypt", "plaintext", "public key path"), &Cripter::pk_encrypt);
 	ClassDB::bind_static_method("Cripter", D_METHOD("pk_decrypt", "ciphertext", "private key path"), &Cripter::pk_decrypt);
 
-	ClassDB::bind_static_method("Cripter", D_METHOD("gen_pk_key", "path", "key name", "type", "bits", "ec_curve"), &Cripter::gen_pk_key, DEFVAL(Cripter::PK_RSA), DEFVAL(Cripter::BITS_2048), DEFVAL(String("secp521r1")));
+	ClassDB::bind_static_method("Cripter", D_METHOD("gen_pk_key", "path", "key name", "type", "bits", "ec_curve"), &Cripter::gen_pk_key, DEFVAL(PK_RSA), DEFVAL(BITS_2048), DEFVAL(String("secp521r1")));
 	ClassDB::bind_static_method("Cripter", D_METHOD("compare_keys", "private key path", "public key path"), &Cripter::compare_keys);
 	ClassDB::bind_static_method("Cripter", D_METHOD("analize_pk_key", "key path"), &Cripter::analize_pk_key);
 	ClassDB::bind_static_method("Cripter", D_METHOD("get_available_ec_curves"), &Cripter::get_available_ec_curves);
