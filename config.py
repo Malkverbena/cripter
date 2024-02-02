@@ -6,7 +6,7 @@ def configure(env):
 
 def get_doc_classes():
 	return [
-		"cripter",
+		"cripter"
 	]
 
 def get_doc_path():
@@ -15,3 +15,7 @@ def get_doc_path():
 
 def get_icons_path():
 	return "icons"
+	
+	
+	
+	

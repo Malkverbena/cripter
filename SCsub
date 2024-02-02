@@ -7,7 +7,11 @@ Import("env")
 if version.major == 4:
 	env.Append(CPPDEFINES=["GD4"])
 
+#env.Prepend(CPPPATH=["#thirdparty/mbedtls/include"])
+#env.add_source_files(env.modules_sources, "*.cpp")
 
-env.Prepend(CPPPATH=["#thirdparty/mbedtls/include"])
-env.add_source_files(env.modules_sources, "*.cpp")
 
+
+env_cripter = env.Clone()
+env_cripter.Prepend(CPPPATH=["#thirdparty/mbedtls/include"])
+env_cripter.add_source_files(env.modules_sources, "*.cpp")

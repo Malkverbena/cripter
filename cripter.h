@@ -125,13 +125,14 @@ public:
 	// FORMAT: Format of key (DER or PEM).
 	// SIZE: Bits of the key. Acceptable sizes: 1024 till 8196.
 	// EC_CURVE: Curve used on EC keys only.
-	static int gen_pk_key(String p_path, String key_name, PK_TYPE p_type = PK_RSA, KeySize p_keybits = BITS_4096, String ec_curve = "secp521r1");
+	static int gen_pk_key(String p_path, String key_name, PK_TYPE p_type = PK_RSA, KeySize p_keybits = BITS_2048, String ec_curve = "secp521r1");
 
 	// Check if a public-private pair of keys matches. 
 	// NOTE: mbedtls_erro returns a negatine int. Godot error returns a positive int. Valid result returns True or False.
 	// PRIVATE_PATH: Pathto the private key.
 	// PUBLIC_PATH: Pathto the public key.
-	static Variant compare_keys(String p_private_key_path, String p_public_key_path);
+	// PASSWORD: The private key's password.
+	static Variant compare_pk_keys(String p_private_key_path, String p_public_key_path, String p_password = String());
 
 	// Return info about the PK keys
 	// KEY_PATH: The path to the key. 
@@ -148,7 +149,7 @@ public:
 	// Decrypt using PK_RSA OR PK_ECP.
 	// INPUT: The data to beencrypted.
 	// KEY_PATH: The path to the key. 
-	static Vector<uint8_t> pk_decrypt(Vector<uint8_t> p_input, String p_key_path);
+	static Vector<uint8_t> pk_decrypt(Vector<uint8_t> p_input, String p_key_path, String p_password = String());
 
 	Cripter();
 	~Cripter();

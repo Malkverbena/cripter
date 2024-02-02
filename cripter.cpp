@@ -592,7 +592,7 @@ int Cripter::gen_pk_key(String p_path, String key_name, PK_TYPE p_type, KeySize 
 
 
 
-Variant Cripter::compare_keys(String p_private_key_path, String p_public_key_path){
+Variant Cripter::compare_pk_keys(String p_private_key_path, String p_public_key_path, String p_password){
 
 	// Open private key
 	Ref<FileAccess> f_priv = FileAccess::open(p_private_key_path, FileAccess::READ);
@@ -603,7 +603,7 @@ Variant Cripter::compare_keys(String p_private_key_path, String p_public_key_pat
 	private_key.resize(f_priv_len + 1);
 	f_priv->get_buffer(private_key.ptrw(), f_priv_len);
 	private_key.write[f_priv_len] = 0; // string terminator
-
+	
 	// Open public key
 	Ref<FileAccess> f_pub = FileAccess::open(p_public_key_path, FileAccess::READ);
 	ERR_FAIL_COND_V_MSG(f_pub.is_null(), ERR_INVALID_PARAMETER, "Cannot open private key file '" + p_private_key_path + "'.");
@@ -621,12 +621,23 @@ Variant Cripter::compare_keys(String p_private_key_path, String p_public_key_pat
 	mbedtls_pk_init(&public_ctx);
 
 	// Parse private key
-	mbedtls_erro = mbedtls_pk_parse_key(&private_ctx, private_key.ptr(), private_key.size(), nullptr, 0);
+#ifdef GD4
+	if (p_password.is_empty()){
+#else
+	if (p_password.empty()){
+#endif
+		mbedtls_erro = mbedtls_pk_parse_key(&private_ctx, private_key.ptr(), private_key.size(), nullptr, 0);
+	}
+	else{
+		const unsigned char *password = (const unsigned char *)p_password.utf8().get_data();            
+		mbedtls_erro = mbedtls_pk_parse_key(&private_ctx, private_key.ptr(), private_key.size(), password, 0);
+	}
+	
 	mbedtls_platform_zeroize(private_key.ptrw(), private_key.size());
 	if (mbedtls_erro != OK){
 		mbedtls_pk_free(&private_ctx);
 		mbedtls_pk_free(&public_ctx);
-		ERR_FAIL_V_MSG(mbedtls_erro,  "Error parsing private key '" + itos(mbedtls_erro) + "'.");
+		ERR_FAIL_V_MSG(mbedtls_erro, "Error parsing private key '" + itos(mbedtls_erro) + "'.");
 	}
 
 	// Parse public key
@@ -635,7 +646,7 @@ Variant Cripter::compare_keys(String p_private_key_path, String p_public_key_pat
 	if (mbedtls_erro != OK){
 		mbedtls_pk_free(&private_ctx);
 		mbedtls_pk_free(&public_ctx);
-		ERR_FAIL_V_MSG(mbedtls_erro,  "Error parsing public key '" + itos(mbedtls_erro) + "'.");
+		ERR_FAIL_V_MSG(mbedtls_erro, "Error parsing public key '" + itos(mbedtls_erro) + "'.");
 	}
 
 	// Check
@@ -728,7 +739,7 @@ Vector<uint8_t> Cripter::pk_encrypt(Vector<uint8_t> p_input, String p_key_path){
 }
 
 
-Vector<uint8_t> Cripter::pk_decrypt(Vector<uint8_t> p_input, String p_key_path){
+Vector<uint8_t> Cripter::pk_decrypt(Vector<uint8_t> p_input, String p_key_path, String p_password){
 
 	int mbedtls_erro;
 	const char *pers = "pk_decrypt";
@@ -749,7 +760,17 @@ Vector<uint8_t> Cripter::pk_decrypt(Vector<uint8_t> p_input, String p_key_path){
 	mbedtls_ctr_drbg_init( &ctr_drbg );
 
 	// Gears
-	mbedtls_erro = mbedtls_pk_parse_keyfile( &pk_key, key_path, nullptr);
+#ifdef GD4
+	if (p_password.is_empty()){
+#else
+	if (p_password.empty()){
+#endif
+		mbedtls_erro = mbedtls_pk_parse_keyfile( &pk_key, key_path, nullptr);
+	}
+	else{
+		const char *password = p_password.utf8().get_data();
+		mbedtls_erro = mbedtls_pk_parse_keyfile(&pk_key, key_path, password);
+	}
 	if (mbedtls_erro != OK){
 		mbedtls_pk_free(&pk_key);
 		mbedtls_ctr_drbg_free(&ctr_drbg);
@@ -889,7 +910,7 @@ void Cripter::_bind_methods(){
 	ClassDB::bind_static_method("Cripter", D_METHOD("pk_decrypt", "ciphertext", "private key path"), &Cripter::pk_decrypt);
 
 	ClassDB::bind_static_method("Cripter", D_METHOD("gen_pk_key", "path", "key name", "type", "bits", "ec_curve"), &Cripter::gen_pk_key, DEFVAL(PK_RSA), DEFVAL(BITS_2048), DEFVAL(String("secp521r1")));
-	ClassDB::bind_static_method("Cripter", D_METHOD("compare_keys", "private key path", "public key path"), &Cripter::compare_keys);
+	ClassDB::bind_static_method("Cripter", D_METHOD("compare_pk_keys", "private key path", "public key path", "Password"), &Cripter::compare_pk_keys, DEFVAL(""));
 	ClassDB::bind_static_method("Cripter", D_METHOD("analize_pk_key", "key path"), &Cripter::analize_pk_key);
 	ClassDB::bind_static_method("Cripter", D_METHOD("get_available_ec_curves"), &Cripter::get_available_ec_curves);
 
