@@ -8,6 +8,20 @@
 #define EXPONENT 65537
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // -------------GCM
 
 Vector<uint8_t> Cripter::gcm_encrypt(Vector<uint8_t> p_input, String p_password, String p_add, KeySize p_keybits){
@@ -473,8 +487,23 @@ Vector<uint8_t> Cripter::aes_decrypt(Vector<uint8_t> p_input, String p_password,
 
 
 // -------------ASSIMETRIC
+//pk_generate
+//pk_analize
+//pk_match
 
-int Cripter::gen_pk_key(String p_path, String key_name, PK_TYPE p_type, KeySize p_keybits, String ec_curve){
+//pk_encrypt
+//pk_decrypt
+
+
+//rsa_generate
+//rsa_encrypt
+//rsa_decrypt
+
+
+//  ==== RSA ====
+
+
+int Cripter::gen_pk_keys(String p_path, String key_name, PK_TYPE p_type, KeySize p_keybits, String ec_curve){
 
 	const char *pers = "gen_key";
 	int mbedtls_erro;
@@ -488,17 +517,6 @@ int Cripter::gen_pk_key(String p_path, String key_name, PK_TYPE p_type, KeySize 
 	mbedtls_entropy_init(&entropy);
 	mbedtls_ctr_drbg_init(&ctr_drbg);
 
-	//Init entropy
-	/*
-	mbedtls_erro = mbedtls_entropy_add_source(&entropy, dev_random_entropy_poll, nullptr, DEV_RANDOM_THRESHOLD, MBEDTLS_ENTROPY_SOURCE_STRONG);
-		if (mbedtls_erro != OK){
-		mbedtls_pk_free(&pk_key);
-		mbedtls_ctr_drbg_free(&ctr_drbg);
-		mbedtls_entropy_free(&entropy);
-		ERR_FAIL_V_MSG(mbedtls_erro, mbed_error_msn(mbedtls_erro, "mbedtls_entropy_add_source"));
-	}
-	*/
-	
 	mbedtls_erro = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char *) pers, strlen(pers));
 	if (mbedtls_erro != OK){
 		mbedtls_pk_free(&pk_key);
@@ -529,7 +547,7 @@ int Cripter::gen_pk_key(String p_path, String key_name, PK_TYPE p_type, KeySize 
 
 	// Generate key EC
 	else if (p_type == PK_ECKEY) {
-		const mbedtls_ecp_curve_info *curve_info = mbedtls_ecp_curve_info_from_name(ec_curve.utf8().get_data());    
+		const mbedtls_ecp_curve_info *curve_info = mbedtls_ecp_curve_info_from_name(ec_curve.utf8().get_data());
 		mbedtls_erro = mbedtls_ecp_gen_key((mbedtls_ecp_group_id)curve_info->grp_id, mbedtls_pk_ec(pk_key), mbedtls_ctr_drbg_random, &ctr_drbg);
 		if (mbedtls_erro != OK){
 			mbedtls_pk_free(&pk_key);
@@ -603,7 +621,7 @@ Variant Cripter::compare_pk_keys(String p_private_key_path, String p_public_key_
 	private_key.resize(f_priv_len + 1);
 	f_priv->get_buffer(private_key.ptrw(), f_priv_len);
 	private_key.write[f_priv_len] = 0; // string terminator
-	
+
 	// Open public key
 	Ref<FileAccess> f_pub = FileAccess::open(p_public_key_path, FileAccess::READ);
 	ERR_FAIL_COND_V_MSG(f_pub.is_null(), ERR_INVALID_PARAMETER, "Cannot open private key file '" + p_private_key_path + "'.");
@@ -629,10 +647,10 @@ Variant Cripter::compare_pk_keys(String p_private_key_path, String p_public_key_
 		mbedtls_erro = mbedtls_pk_parse_key(&private_ctx, private_key.ptr(), private_key.size(), nullptr, 0);
 	}
 	else{
-		const unsigned char *password = (const unsigned char *)p_password.utf8().get_data();            
+		const unsigned char *password = (const unsigned char *)p_password.utf8().get_data();
 		mbedtls_erro = mbedtls_pk_parse_key(&private_ctx, private_key.ptr(), private_key.size(), password, 0);
 	}
-	
+
 	mbedtls_platform_zeroize(private_key.ptrw(), private_key.size());
 	if (mbedtls_erro != OK){
 		mbedtls_pk_free(&private_ctx);
@@ -660,11 +678,11 @@ Variant Cripter::compare_pk_keys(String p_private_key_path, String p_public_key_
 	// Clean up
 	mbedtls_pk_free( &private_ctx);
 	mbedtls_pk_free( &public_ctx);
-	
+
 	if (mbedtls_erro == OK){
 		return true;
 	}
-	
+
 	return mbedtls_erro;
 
 }
@@ -712,7 +730,7 @@ Vector<uint8_t> Cripter::pk_encrypt(Vector<uint8_t> p_input, String p_key_path){
 	if (olen < (size_t)p_input.size()){
 		mbedtls_pk_free( &pk_key);
 		mbedtls_ctr_drbg_free(&ctr_drbg);
-		mbedtls_entropy_free(&entropy);	
+		mbedtls_entropy_free(&entropy);
 		ERR_FAIL_V_MSG(output, "Plaintext length bigger then the key size in Bytes. ");
 	}
 
@@ -835,13 +853,13 @@ Dictionary Cripter::_analize_pk_key(String p_key_path, bool is_private){
 
 	ProjectSettings &ps = *ProjectSettings::get_singleton();
 	const char *key_path = ps.globalize_path(p_key_path).utf8().get_data();
-	
+
 	mbedtls_pk_context pk_key;
 	mbedtls_pk_init(&pk_key);
 
 	if (is_private){
 		ret["bits"] = String("PRIVATE");
-		mbedtls_erro = mbedtls_pk_parse_keyfile( &pk_key, key_path, nullptr);   
+		mbedtls_erro = mbedtls_pk_parse_keyfile( &pk_key, key_path, nullptr);
 		if (mbedtls_erro != OK){
 			mbedtls_pk_free(&pk_key);
 			ERR_FAIL_V_MSG(ret, mbed_error_msn(mbedtls_erro, "mbedtls_pk_parse_keyfile"));
@@ -861,15 +879,15 @@ Dictionary Cripter::_analize_pk_key(String p_key_path, bool is_private){
 	String name = String(mbedtls_pk_get_name(&pk_key));
 	ERR_FAIL_COND_V_EDMSG(name == "invalid PK", ret, "Invalid key!");
 
-	ret["name"] = String(name);						// RSA or EC.  
-	ret["bits"] = mbedtls_pk_get_len((&pk_key));	// Length in Bytes. 
+	ret["name"] = String(name);						// RSA or EC.
+	ret["bits"] = mbedtls_pk_get_len((&pk_key));	// Length in Bytes.
 
 	// ECP Curve
 	if( mbedtls_pk_get_type(&pk_key) == MBEDTLS_PK_ECKEY){
 		mbedtls_ecp_keypair *ecp = mbedtls_pk_ec(pk_key);
 		mbedtls_ecp_group_id grp_id = ecp->grp.id;
 		const mbedtls_ecp_curve_info *curve_info = mbedtls_ecp_curve_info_from_grp_id(grp_id);
-		ret["ec_curve"]	= curve_info->name;	
+		ret["ec_curve"]	= curve_info->name;
 	}
 
 	mbedtls_pk_free(&pk_key);
@@ -898,6 +916,246 @@ String Cripter::mbed_error_msn(int mbedtls_erro, const char* p_function){
 }
 
 
+
+//  ==== RSA ====
+
+Array Cripter::gen_rsa_keys(KEY_FORMAT p_format,  KeySize p_keybits){
+
+
+	if (p_keybits < BITS_1024){
+		WARN_PRINT("RSA keys must have a minimum size of 1024 bits.");
+		p_keybits = BITS_1024;
+	}
+	if (p_keybits > BITS_8192){
+		WARN_PRINT("RSA keys must have a maximum size of 8192 bits.");
+		p_keybits = BITS_8192;
+	}
+
+
+	const char *pers = "rsa_genkey";
+	int mbedtls_erro = OK;
+	Array ret;
+
+	mbedtls_rsa_context rsa;
+	mbedtls_entropy_context entropy;
+	mbedtls_ctr_drbg_context ctr_drbg;
+	mbedtls_mpi N, E, P, Q, D, DP, DQ, QP;
+	
+
+	mbedtls_ctr_drbg_init(&ctr_drbg);
+	mbedtls_rsa_init(&rsa, MBEDTLS_RSA_PKCS_V15, 0);
+
+
+	mbedtls_mpi_init(&N);
+	mbedtls_mpi_init(&P);
+	mbedtls_mpi_init(&Q);
+	mbedtls_mpi_init(&D);
+	mbedtls_mpi_init(&E);
+	mbedtls_mpi_init(&DP);
+	mbedtls_mpi_init(&DQ);
+	mbedtls_mpi_init(&QP);
+
+	
+	mbedtls_entropy_init(&entropy);
+	mbedtls_erro = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char *) pers, strlen(pers));
+	if (mbedtls_erro != OK){
+		ERR_PRINT(mbed_error_msn(mbedtls_erro, "mbedtls_ctr_drbg_seed"));
+		goto exit_rsa_gen;
+	}
+
+	mbedtls_erro = mbedtls_rsa_gen_key(&rsa, mbedtls_ctr_drbg_random, &ctr_drbg, p_keybits, EXPONENT);
+	if (mbedtls_erro != OK){
+		ERR_PRINT(mbed_error_msn(mbedtls_erro, "mbedtls_rsa_gen_key"));
+		goto exit_rsa_gen;
+	}
+
+
+	// Exporting.
+	mbedtls_erro = mbedtls_rsa_export(&rsa, &N, &P, &Q, &D, &E);
+	if (mbedtls_erro != OK){
+		ERR_PRINT(mbed_error_msn(mbedtls_erro, "mbedtls_rsa_export"));
+		goto exit_rsa_gen;
+	}
+    mbedtls_erro = mbedtls_rsa_export_crt(&rsa, &DP, &DQ, &QP);
+	if (mbedtls_erro != OK){
+		ERR_PRINT(mbed_error_msn(mbedtls_erro, "mbedtls_rsa_export_crt"));
+		goto exit_rsa_gen;
+	}
+
+{  //--GOTO
+	size_t N_size = mbedtls_mpi_bitlen(&N);
+	size_t E_size = mbedtls_mpi_bitlen(&E);
+	size_t D_size = mbedtls_mpi_bitlen(&D);
+	size_t P_size = mbedtls_mpi_bitlen(&P);
+	size_t Q_size = mbedtls_mpi_bitlen(&Q);
+	size_t DP_size = mbedtls_mpi_bitlen(&DP);
+	size_t DQ_size = mbedtls_mpi_bitlen(&DQ);
+	size_t QP_size = mbedtls_mpi_bitlen(&QP);
+
+
+	if (p_format == PEM){
+
+		char N_buffer[N_size];
+		char E_buffer[E_size];
+		char D_buffer[D_size];
+		char P_buffer[P_size];
+		char Q_buffer[Q_size];
+		char DP_buffer[DP_size];
+		char DQ_buffer[DQ_size];
+		char QP_buffer[QP_size];
+
+		if (
+			(mbedtls_erro = mbedtls_mpi_write_string(&N, 16, N_buffer, N_size, &N_size)) != OK ||
+			(mbedtls_erro = mbedtls_mpi_write_string(&E, 16, E_buffer, E_size, &E_size)) != OK
+		){
+			ERR_PRINT(mbed_error_msn(mbedtls_erro, "mbedtls_mpi_write_string"));
+			goto exit_rsa_gen;
+		}
+
+		if (
+			(mbedtls_erro = mbedtls_mpi_write_string(&N, 16, N_buffer, N_size, &N_size)) != OK ||
+			(mbedtls_erro = mbedtls_mpi_write_string(&E, 16, E_buffer, E_size, &E_size)) != OK ||
+			(mbedtls_erro = mbedtls_mpi_write_string(&D, 16, D_buffer, D_size, &D_size)) != OK ||
+			(mbedtls_erro = mbedtls_mpi_write_string(&P, 16, P_buffer, P_size, &P_size)) != OK ||
+			(mbedtls_erro = mbedtls_mpi_write_string(&Q, 16, Q_buffer, Q_size, &Q_size)) != OK ||
+			(mbedtls_erro = mbedtls_mpi_write_string(&DP, 16, DP_buffer, DP_size, &DP_size)) != OK ||
+			(mbedtls_erro = mbedtls_mpi_write_string(&DQ, 16, DQ_buffer, DQ_size, &DQ_size)) != OK ||
+			(mbedtls_erro = mbedtls_mpi_write_string(&QP, 16, QP_buffer, QP_size, &QP_size)) != OK
+		){
+			ERR_PRINT(mbed_error_msn(mbedtls_erro, "mbedtls_mpi_write_string"));
+			goto exit_rsa_gen;
+		}
+
+
+		Ref<RsaKey> private_key = Ref<RsaKey>(memnew(RsaKey()));
+		Ref<RsaKey> public_key = Ref<RsaKey>(memnew(RsaKey()));
+
+		// Private
+		private_key->key_format = (int)PEM;
+		private_key->key_type = (int)PRIVATE;
+		private_key->N = String(N_buffer).to_ascii_buffer();
+		private_key->E = String(E_buffer).to_ascii_buffer();
+		private_key->D = String(D_buffer).to_ascii_buffer();
+		private_key->P = String(P_buffer).to_ascii_buffer();
+		private_key->Q = String(Q_buffer).to_ascii_buffer();
+		private_key->DP = String(DP_buffer).to_ascii_buffer();
+		private_key->DQ = String(DQ_buffer).to_ascii_buffer();
+		private_key->QP = String(QP_buffer).to_ascii_buffer();
+
+		// Public
+		public_key->key_format = (int)PEM;
+		public_key->key_type = (int)PUBLIC;
+		public_key->N = String(N_buffer).to_ascii_buffer();
+		public_key->E = String(E_buffer).to_ascii_buffer();
+
+		ret.append(private_key);
+		ret.append(public_key);
+		goto exit_rsa_gen;;
+
+	}
+
+
+	else{  // DER
+
+		uint8_t N_buffer[N_size];
+		uint8_t E_buffer[E_size];
+		uint8_t D_buffer[D_size];
+		uint8_t P_buffer[P_size];
+		uint8_t Q_buffer[Q_size];
+		uint8_t DP_buffer[DP_size];
+		uint8_t DQ_buffer[DQ_size];
+		uint8_t QP_buffer[QP_size];
+
+		if (
+			(mbedtls_erro = mbedtls_mpi_write_binary_le(&N, N_buffer, N_size)) != OK ||
+			(mbedtls_erro = mbedtls_mpi_write_binary_le(&E, E_buffer, E_size)) != OK
+		){
+			ERR_PRINT(mbed_error_msn(mbedtls_erro, "mbedtls_mpi_write_binary_le"));
+			goto exit_rsa_gen;
+		}
+
+		if (
+			(mbedtls_erro = mbedtls_mpi_write_binary_le(&N, N_buffer, N_size)) != OK ||
+			(mbedtls_erro = mbedtls_mpi_write_binary_le(&E, E_buffer, E_size)) != OK ||
+			(mbedtls_erro = mbedtls_mpi_write_binary_le(&D, D_buffer, D_size)) != OK ||
+			(mbedtls_erro = mbedtls_mpi_write_binary_le(&P, P_buffer, P_size)) != OK ||
+			(mbedtls_erro = mbedtls_mpi_write_binary_le(&Q, Q_buffer, Q_size)) != OK ||
+			(mbedtls_erro = mbedtls_mpi_write_binary_le(&DP, DP_buffer, DP_size)) != OK ||
+			(mbedtls_erro = mbedtls_mpi_write_binary_le(&DQ, DQ_buffer, DQ_size)) != OK ||
+			(mbedtls_erro = mbedtls_mpi_write_binary_le(&QP, QP_buffer, QP_size)) != OK
+		){
+			ERR_PRINT(mbed_error_msn(mbedtls_erro, "mbedtls_mpi_write_binary_le"));
+			goto exit_rsa_gen;
+		}
+
+		
+		Vector<uint8_t> N_out, E_out, D_out, P_out, Q_out, DP_out, DQ_out, QP_out;
+		N_out.resize(N_size);	memcpy(N_out.ptrw(), &N_buffer, N_size);
+		E_out.resize(E_size);	memcpy(E_out.ptrw(), &E_buffer, E_size);
+		D_out.resize(D_size);	memcpy(D_out.ptrw(), &D_buffer, D_size);
+		P_out.resize(P_size);	memcpy(P_out.ptrw(), &P_buffer, P_size);
+		Q_out.resize(Q_size);	memcpy(Q_out.ptrw(), &Q_buffer, Q_size);
+		DP_out.resize(DP_size);	memcpy(DP_out.ptrw(), &DP_buffer, DP_size);
+		DQ_out.resize(DQ_size);	memcpy(DQ_out.ptrw(), &DQ_buffer, DQ_size);
+		QP_out.resize(QP_size);	memcpy(QP_out.ptrw(), &QP_buffer, QP_size);
+
+		Ref<RsaKey> private_key = Ref<RsaKey>(memnew(RsaKey()));
+		Ref<RsaKey> public_key = Ref<RsaKey>(memnew(RsaKey()));
+
+		// Private
+		private_key->key_format = (int)DER;
+		private_key->key_type = (int)PRIVATE;
+		private_key->N = N_out;
+		private_key->E = E_out;
+		private_key->D = D_out;
+		private_key->P = P_out;
+		private_key->Q = Q_out;
+		private_key->DP = DP_out;
+		private_key->DQ = DQ_out;
+		private_key->QP = QP_out;
+
+		// Public
+		public_key->key_format = (int)DER;
+		public_key->key_type = (int)PUBLIC;
+		public_key->N = N_out;
+		public_key->E = E_out;
+
+		ret.append(private_key);
+		ret.append(public_key);
+		goto exit_rsa_gen;;
+
+	}
+	
+
+
+
+}//--GOTO
+
+
+exit_rsa_gen:
+	mbedtls_mpi_free(&N);
+	mbedtls_mpi_free(&E);
+	mbedtls_mpi_free(&D);
+	mbedtls_mpi_free(&P);
+	mbedtls_mpi_free(&Q);
+	mbedtls_mpi_free(&DP);
+	mbedtls_mpi_free(&DQ);
+	mbedtls_mpi_free(&QP);
+	mbedtls_rsa_free(&rsa);
+	mbedtls_ctr_drbg_free(&ctr_drbg);
+	mbedtls_entropy_free(&entropy);
+	return ret;
+
+
+
+}
+
+
+
+
+
+
+
 void Cripter::_bind_methods(){
 
 	ClassDB::bind_static_method("Cripter", D_METHOD("gcm_encrypt", "plaintext", "password", "additional data", "key bits"),&Cripter::gcm_encrypt, DEFVAL(String()), DEFVAL(BITS_256));
@@ -909,14 +1167,21 @@ void Cripter::_bind_methods(){
 	ClassDB::bind_static_method("Cripter", D_METHOD("pk_encrypt", "plaintext", "public key path"), &Cripter::pk_encrypt);
 	ClassDB::bind_static_method("Cripter", D_METHOD("pk_decrypt", "ciphertext", "private key path"), &Cripter::pk_decrypt);
 
-	ClassDB::bind_static_method("Cripter", D_METHOD("gen_pk_key", "path", "key name", "type", "bits", "ec_curve"), &Cripter::gen_pk_key, DEFVAL(PK_RSA), DEFVAL(BITS_2048), DEFVAL(String("secp521r1")));
+	ClassDB::bind_static_method("Cripter", D_METHOD("gen_pk_keys", "path", "key name", "type", "bits", "ec_curve"), &Cripter::gen_pk_keys, DEFVAL(PK_RSA), DEFVAL(BITS_2048), DEFVAL(String("secp521r1")));
 	ClassDB::bind_static_method("Cripter", D_METHOD("compare_pk_keys", "private key path", "public key path", "Password"), &Cripter::compare_pk_keys, DEFVAL(""));
 	ClassDB::bind_static_method("Cripter", D_METHOD("analize_pk_key", "key path"), &Cripter::analize_pk_key);
 	ClassDB::bind_static_method("Cripter", D_METHOD("get_available_ec_curves"), &Cripter::get_available_ec_curves);
 
+	ClassDB::bind_static_method("Cripter", D_METHOD("gen_rsa_keys", "format", "keybits"), &Cripter::gen_rsa_keys, DEFVAL(PEM), DEFVAL(BITS_2048));
+
+	BIND_ENUM_CONSTANT(PRIVATE);
+	BIND_ENUM_CONSTANT(PUBLIC);
 
 	BIND_ENUM_CONSTANT(PK_RSA);
 	BIND_ENUM_CONSTANT(PK_ECKEY);
+
+	BIND_ENUM_CONSTANT(DER);
+	BIND_ENUM_CONSTANT(PEM);
 
 	BIND_ENUM_CONSTANT(BITS_128);
 	BIND_ENUM_CONSTANT(BITS_192);
@@ -945,6 +1210,18 @@ Cripter::Cripter(){
 }
 
 Cripter::~Cripter(){
+}
+
+
+void RsaKey::_bind_methods(){
+	
+}
+
+
+RsaKey::RsaKey(){
+}
+
+RsaKey::~RsaKey(){
 }
 
 /*cripter.cpp*/

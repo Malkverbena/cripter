@@ -12,17 +12,50 @@
 #endif
 
 
-
-
-#include <mbedtls/platform.h>  // remover
+//TODO: Support to big-endian on RSA
 
 #include <mbedtls/error.h>
+
 #include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
+#include "mbedtls/platform.h"
+#include "mbedtls/bignum.h"
+
+#include "mbedtls/rsa.h"
 #include <mbedtls/gcm.h>
 #include <mbedtls/pk.h>
 
-#pragma once
+
+#ifdef GD4
+class RsaKey : public RefCounted{
+	GDCLASS(RsaKey, RefCounted);
+#else
+class RsaKey : public Reference {
+	GDCLASS(RsaKey,Reference);
+#endif
+
+friend class Cripter;
+
+private:
+	int key_type;
+	int key_format;
+	Vector<uint8_t> N, P, Q, D, E, DP, DQ, QP;
+
+
+protected:
+	static void _bind_methods();
+
+
+public:
+	RsaKey();
+	~RsaKey();
+
+};
+
+
+
+
+
 
 #ifdef GD4
 class Cripter : public RefCounted{
@@ -47,9 +80,18 @@ protected:
 
 
 public:
+	enum KEY_FORMAT{
+		DER	= 0,
+		PEM	= 1,
+	};
 
 	enum EC_CURVE{};
 
+
+	enum KEY_TYPE {
+		PRIVATE	= 0,
+		PUBLIC	= 1,
+	};
 
 	enum PK_TYPE{
 //		PK_NONE			= MBEDTLS_PK_NONE,
@@ -101,7 +143,6 @@ public:
 	static Vector<uint8_t> gcm_decrypt(Vector<uint8_t> p_input, String p_password, String p_add = String(), KeySize p_keybits = BITS_256);
 
 
-
 /* AES */
 	// This function performs an AES encryption operation.
 	// INPUT: is the content to be encrypted.
@@ -125,7 +166,7 @@ public:
 	// FORMAT: Format of key (DER or PEM).
 	// SIZE: Bits of the key. Acceptable sizes: 1024 till 8196.
 	// EC_CURVE: Curve used on EC keys only.
-	static int gen_pk_key(String p_path, String key_name, PK_TYPE p_type = PK_RSA, KeySize p_keybits = BITS_2048, String ec_curve = "secp521r1");
+	static int gen_pk_keys(String p_path, String key_name, PK_TYPE p_type = PK_RSA, KeySize p_keybits = BITS_2048, String ec_curve = "secp521r1");
 
 	// Check if a public-private pair of keys matches. 
 	// NOTE: mbedtls_erro returns a negatine int. Godot error returns a positive int. Valid result returns True or False.
@@ -151,15 +192,24 @@ public:
 	// KEY_PATH: The path to the key. 
 	static Vector<uint8_t> pk_decrypt(Vector<uint8_t> p_input, String p_key_path, String p_password = String());
 
+
+	static Array gen_rsa_keys(RSA_FORMAT p_format = PEM, KeySize p_keybits = BITS_1024);
+
+
+
 	Cripter();
 	~Cripter();
 
 };
 
+VARIANT_ENUM_CAST(Cripter::KEY_TYPE);
 
 VARIANT_ENUM_CAST(Cripter::PK_TYPE);
 VARIANT_ENUM_CAST(Cripter::KeySize);
 VARIANT_ENUM_CAST(Cripter::Algorithm);
+VARIANT_ENUM_CAST(Cripter::KEY_FORMAT);
+
+
 
 
 #endif 
