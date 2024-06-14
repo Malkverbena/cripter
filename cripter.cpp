@@ -1165,7 +1165,7 @@ void Cripter::_bind_methods(){
 	ClassDB::bind_static_method("Cripter", D_METHOD("aes_decrypt", "ciphertext", "password", "algorithm", "key bits"),&Cripter::aes_decrypt, DEFVAL(CBC), DEFVAL(BITS_256));
 
 	ClassDB::bind_static_method("Cripter", D_METHOD("pk_encrypt", "plaintext", "public key path"), &Cripter::pk_encrypt);
-	ClassDB::bind_static_method("Cripter", D_METHOD("pk_decrypt", "ciphertext", "private key path"), &Cripter::pk_decrypt);
+	ClassDB::bind_static_method("Cripter", D_METHOD("pk_decrypt", "ciphertext", "private key path"), &Cripter::pk_decrypt, DEFVAL(""));
 
 	ClassDB::bind_static_method("Cripter", D_METHOD("gen_pk_keys", "path", "key name", "type", "bits", "ec_curve"), &Cripter::gen_pk_keys, DEFVAL(PK_RSA), DEFVAL(BITS_2048), DEFVAL(String("secp521r1")));
 	ClassDB::bind_static_method("Cripter", D_METHOD("compare_pk_keys", "private key path", "public key path", "Password"), &Cripter::compare_pk_keys, DEFVAL(""));

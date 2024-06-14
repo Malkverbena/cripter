@@ -193,7 +193,7 @@ public:
 	static Vector<uint8_t> pk_decrypt(Vector<uint8_t> p_input, String p_key_path, String p_password = String());
 
 
-	static Array gen_rsa_keys(RSA_FORMAT p_format = PEM, KeySize p_keybits = BITS_1024);
+	static Array gen_rsa_keys(KEY_FORMAT p_format = PEM, KeySize p_keybits = BITS_1024);
 
 
 
