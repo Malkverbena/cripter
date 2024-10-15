@@ -212,6 +212,19 @@ void Cripter::_bind_methods(){
 	ClassDB::bind_static_method("Cripter", D_METHOD("gcm_encrypt", "plaintext", "password", "IV", "AAD", "keybits"), &Cripter::gcm_encrypt, DEFVAL(String()), DEFVAL(BITS_256));
 	ClassDB::bind_static_method("Cripter", D_METHOD("gcm_decrypt", "ciphertext", "password", "IV", "AAD", "tag", "keybits"), &Cripter::gcm_decrypt, DEFVAL(BITS_256));
 
+
+
+	BIND_ENUM_CONSTANT(BITS_128);
+	BIND_ENUM_CONSTANT(BITS_192);
+	BIND_ENUM_CONSTANT(BITS_256);
+	BIND_ENUM_CONSTANT(BITS_512);
+	BIND_ENUM_CONSTANT(BITS_1024);
+	BIND_ENUM_CONSTANT(BITS_2048);
+	BIND_ENUM_CONSTANT(BITS_3072);
+	BIND_ENUM_CONSTANT(BITS_4096);
+	BIND_ENUM_CONSTANT(BITS_7680);
+	BIND_ENUM_CONSTANT(BITS_8192);
+
 }
 
 

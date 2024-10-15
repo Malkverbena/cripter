@@ -98,6 +98,7 @@ public:
 };
 
 
+VARIANT_ENUM_CAST(Cripter::KeySize);
 
 #endif 
 /*cripter.h*/
