@@ -37,6 +37,11 @@ protected:
 
 public:
 
+	static PackedByteArray generate_iv(const int iv_length, const String p_personalization);
+
+	static String derive_key_pbkdf2(const String p_password, const String p_salt, int iterations = 500, int key_length = 16);
+
+
 
 	Cripter();
 	~Cripter();
