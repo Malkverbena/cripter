@@ -1,17 +1,61 @@
 #!/usr/bin/env python
+#SCsub
 
 import version
 Import("env")
-
-
-if version.major == 4:
-	env.Append(CPPDEFINES=["GD4"])
-
-#env.Prepend(CPPPATH=["#thirdparty/mbedtls/include"])
-#env.add_source_files(env.modules_sources, "*.cpp")
-
-
-
 env_cripter = env.Clone()
-env_cripter.Prepend(CPPPATH=["#thirdparty/mbedtls/include"])
-env_cripter.add_source_files(env.modules_sources, "*.cpp")
+
+is_builtin = env["builtin_mbedtls"]
+has_module = env["module_mbedtls_enabled"]
+thirdparty_obj = []
+
+
+if is_builtin or not has_module:
+	env_cripter.Prepend(CPPPATH=["#thirdparty/mbedtls/include"])
+
+
+if not has_module:
+	config_path = "thirdparty/mbedtls/include/godot_core_mbedtls_config.h"
+	config_path = f"<{config_path}>" if env_cripter["ninja"] and env_cripter.msvc else f'\\"{config_path}\\"'
+	env_cripter.Append(CPPDEFINES=[("MBEDTLS_CONFIG_FILE", config_path)])
+
+	env_thirdparty = env_cripter.Clone()
+	env_thirdparty.disable_warnings()
+	thirdparty_mbedtls_dir = "#thirdparty/mbedtls/library/"
+	thirdparty_mbedtls_sources = [
+		"aes.c",
+		"ctr_drbg.c",
+		"entropy.c",
+		"gcm.c",
+		"cipher.c",
+		"block_cipher.c",
+		"error.c",
+		"pk.c",
+		"godot_core_mbedtls_platform.c",
+	]
+	thirdparty_mbedtls_sources = [thirdparty_mbedtls_dir + file for file in thirdparty_mbedtls_sources]
+	env_thirdparty.add_source_files(thirdparty_obj, thirdparty_mbedtls_sources)
+
+	env_thirdparty.Depends(thirdparty_obj, "#thirdparty/mbedtls/include/godot_core_mbedtls_config.h")
+	env.core_sources += thirdparty_obj
+elif is_builtin:
+
+	config_path = "thirdparty/mbedtls/include/godot_module_mbedtls_config.h"
+	config_path = f"<{config_path}>" if env_cripter["ninja"] and env_cripter.msvc else f'\\"{config_path}\\"'
+	env_cripter.Append(CPPDEFINES=[("MBEDTLS_CONFIG_FILE", config_path)])
+
+	thirdparty_obj = ["#thirdparty/mbedtls/include/godot_module_mbedtls_config.h"]
+
+
+
+
+# ==================
+# Godot source files
+
+module_obj = []
+
+env_cripter.add_source_files(module_obj, "*.cpp")
+
+env.modules_sources += module_obj
+
+env.Depends(module_obj, thirdparty_obj)
