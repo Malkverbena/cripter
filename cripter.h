@@ -26,6 +26,9 @@ class Cripter : public RefCounted{
 
 private:
 
+	static String mbed_error_msn(int mbedtls_erro, const char* p_function);
+
+
 
 protected:
 
