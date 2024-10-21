@@ -4,6 +4,7 @@
 
 #include "core/object/class_db.h"
 #include "cripter.h"
+#include <mbedtls/error.h>
 
 
 void initialize_cripter_module(ModuleInitializationLevel p_level) {

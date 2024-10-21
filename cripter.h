@@ -3,19 +3,25 @@
 #define CRIPTER_H
 
 
-#include <core/config/project_settings.h>
+#define MBEDTLS_ERROR_C
+
+
+#include "core/config/project_settings.h"
 #include "core/object/ref_counted.h"
 #include "core/core_bind.h"
 
 
+#include <mbedtls/error.h>
 #include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/gcm.h>
 #include <mbedtls/pk.h>
 #include <mbedtls/pkcs5.h>
-#include <mbedtls/md.h> 
-#include <mbedtls/error.h>
+#include <mbedtls/md.h>
 
+
+#include <vector>
+#include <iostream>
 
 
 
@@ -23,21 +29,11 @@ class Cripter : public RefCounted{
 	GDCLASS(Cripter, RefCounted);
 
 
-
-private:
-
-	static String mbed_error_msn(int mbedtls_erro, const char* p_function);
-
-
-
-protected:
-
-	static void _bind_methods();
-
-
-
-
 public:
+
+
+	static const int GCM_TAG_SIZE = 16;
+	static const int AES_BLOCK_SIZE = 16;
 
 
 	enum KeySize { // - Standard sizes for keys.
@@ -54,42 +50,112 @@ public:
 	};
 
 
+	enum Algorithm {
+		EBC,
+		CBC,
+		XTS,
+		CFB128,
+		CFB8,
+		OFB,
+		CTR
+	};
+
+//CTR
+
+private:
+
+	static const int MBEDTLS_ERROR_BUFFER_LENGTH = 255;
+
+
+	static std::vector<unsigned char> GDstring_to_STDvector(const String p_string);
+
+	static std::vector<unsigned char> byteArray_to_vector(const PackedByteArray &p_packed_array);
+
+	static String mbed_error_msn(int mbedtls_erro, const char* p_function);
+
+	static Error add_pkcs7_padding(const std::vector<unsigned char>& data, std::vector<unsigned char>& padded_data, size_t block_size);
+	
+	static Error remove_pkcs7_padding(const std::vector<unsigned char>& padded_data, std::vector<unsigned char>& data, size_t block_size);
+
+	static Variant _gcm_crypt(std::vector<unsigned char> input, std::vector<unsigned char> password, std::vector<unsigned char> iv, std::vector<unsigned char> aad, std::vector<unsigned char> tag,		Cripter::KeySize keybits, int mode);
+
+
+	static std::vector<unsigned char> _aes_crypt(
+		std::vector<unsigned char> input,
+		std::vector<unsigned char> password,
+		std::vector<unsigned char> iv,
+		Algorithm algorith,
+		Cripter::KeySize keybits,
+		int mode
+	);
+
+
+protected:
+
+	static void _bind_methods();
 
 
 
 
+public:
 
-
-
+	// Utilities
 
 	static PackedByteArray generate_iv(
-		const int iv_length, 
+		const int iv_length,
 		const String p_personalization
 	);
 
 	static String derive_key_pbkdf2(
-		const String p_password, const String p_salt, 
-		int iterations = 500, 
+		const String p_password, const String p_salt,
+		int iterations = 500,
 		int key_length = 16
 	);
 
 
-	static Dictionary gcm_encrypt(
-		const PackedByteArray &plaintext, 
-		const String &p_password, 
-		const PackedByteArray &iv, 
-		const String &p_aad = String(), 
-		Cripter::KeySize p_keybits = BITS_256
+
+	// AES
+
+
+	static PackedByteArray aes_encrypt(
+		const PackedByteArray plaintext,
+		const String p_password,		// A chave precisa ter um tamanho especifico. Use "derive_key_pbkdf2" para derivar a chave para 32 bytes / 256 bits.
+		PackedByteArray p_iv,			// CBC=128 bits (16 bytes)
+		Algorithm algorith = CBC,
+		KeySize keybits = BITS_256
 	);
 
-	static Dictionary gcm_decrypt(
-		const PackedByteArray &ciphertext,
-		const String &p_password,
-		const PackedByteArray &iv,
-		const String &p_aad,
-		const PackedByteArray &p_tag,
-		Cripter::KeySize p_keybits = BITS_256
+	static PackedByteArray aes_decrypt(
+		const PackedByteArray p_input,
+		const String p_password,		
+		PackedByteArray p_iv,			
+		Algorithm algorith = CBC,
+		KeySize keybits = BITS_256
 	);
+
+
+
+	// GCM
+
+
+
+	static Dictionary gcm_encrypt(
+		const PackedByteArray plaintext,
+		const String p_password,
+		const PackedByteArray p_iv,
+		String p_aad = "",
+		Cripter::KeySize keybits = BITS_256
+	);
+
+	static PackedByteArray gcm_decrypt(
+		const PackedByteArray ciphertext,
+		const String p_password,
+		const PackedByteArray p_iv,
+		const PackedByteArray p_tag,
+		const String p_aad,
+		Cripter::KeySize keybits = BITS_256
+	);
+
 
 
 	Cripter();
@@ -97,8 +163,12 @@ public:
 
 };
 
-
 VARIANT_ENUM_CAST(Cripter::KeySize);
+VARIANT_ENUM_CAST(Cripter::Algorithm);
 
-#endif 
+
+
+#endif
+
+
 /*cripter.h*/
