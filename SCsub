@@ -17,7 +17,10 @@ cripter_dir = os.path.abspath(str(Dir('.')))
 env_cripter.Append(CPPPATH=[cripter_dir])
 
 
-config_path = "mbedtls_cripter_config.h"
+#config_path = "mbedtls_cripter_config.h"
+
+config_path = "config_2.h"
+
 config_path = f"<{config_path}>" if env_cripter["ninja"] and env_cripter.msvc else f'\\"{config_path}\\"'
 env_cripter.Append(CPPDEFINES=[("MBEDTLS_CONFIG_FILE", config_path)])
 
