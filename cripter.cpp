@@ -8,8 +8,13 @@
 // =============== AES FUNCTION ===============
 
 
-PackedByteArray Cripter::aes_encrypt(const PackedByteArray plaintext, const String p_password, PackedByteArray p_iv, Algorithm algorith,	KeySize keybits){
+PackedByteArray Cripter::aes_encrypt(const PackedByteArray plaintext, const String p_password, PackedByteArray p_iv, Algorithm algorith, KeySize keybits){
 
+
+	PackedByteArray result = _aes_crypt(plaintext, p_password, p_iv, algorith, keybits, MBEDTLS_AES_ENCRYPT);
+	return result;
+
+/*
 	std::vector<unsigned char> password = GDstring_to_STDvector(p_password);
 	std::vector<unsigned char> input = byteArray_to_vector(plaintext);
 	std::vector<unsigned char> iv = byteArray_to_vector(p_iv);
@@ -21,11 +26,16 @@ PackedByteArray Cripter::aes_encrypt(const PackedByteArray plaintext, const Stri
 	memcpy(ret.ptrw(), result.data(), result.size());
 
 	return ret;
+*/
 }
 
 
 PackedByteArray Cripter::aes_decrypt(const PackedByteArray ciphertext, const String p_password, PackedByteArray p_iv, Algorithm algorith, KeySize keybits){
 
+
+	PackedByteArray result = _aes_crypt(ciphertext, p_password, p_iv, algorith, keybits, MBEDTLS_AES_DECRYPT);
+	return result;
+/*
 	std::vector<unsigned char> password = GDstring_to_STDvector(p_password);
 	std::vector<unsigned char> input = byteArray_to_vector(ciphertext);
 	std::vector<unsigned char> iv = byteArray_to_vector(p_iv);
@@ -37,10 +47,15 @@ PackedByteArray Cripter::aes_decrypt(const PackedByteArray ciphertext, const Str
 	memcpy(ret.ptrw(), result.data(), result.size());
 
 	return ret;
+*/
 }
 
 
-std::vector<unsigned char> Cripter::_aes_crypt(std::vector<unsigned char> input, std::vector<unsigned char> password, std::vector<unsigned char> iv, Algorithm algorith, Cripter::KeySize keybits, int mode){
+
+PackedByteArray Cripter::_aes_crypt(PackedByteArray input, String password, PackedByteArray iv, Algorithm algorith, Cripter::KeySize keybits, int mode){
+//std::vector<unsigned char> Cripter::_aes_crypt(std::vector<unsigned char> input, std::vector<unsigned char> password, std::vector<unsigned char> iv, Algorithm algorith, Cripter::KeySize keybits, int mode){
+
+
 
 	if ((algorith != XTS) and (keybits < BITS_128)){
 		WARN_PRINT("Most AES algorithms support 128,192 and 256 bits keys, with the exception of XTS, which only supports 256 and 512 bits keys. - Using 128 Bits key size");
@@ -59,7 +74,8 @@ std::vector<unsigned char> Cripter::_aes_crypt(std::vector<unsigned char> input,
 		keybits = BITS_512;
 	}
 
-	std::vector<unsigned char> output;
+	// std::vector<unsigned char> output;
+	PackedByteArray output;
 
 	if (iv.size() != AES_BLOCK_SIZE){
 		WARN_PRINT("The IV size must be AES_BLOCK_SIZE for AES encryption.");
@@ -71,7 +87,8 @@ std::vector<unsigned char> Cripter::_aes_crypt(std::vector<unsigned char> input,
 	mbedtls_aes_init(&aes_ctx);
 	output.resize(input.size());
 
-	mbedtls_erro = mbedtls_aes_setkey_enc(&aes_ctx, password.data(), keybits);
+//	mbedtls_erro = mbedtls_aes_setkey_enc(&aes_ctx, password.data(), keybits);
+	mbedtls_erro = mbedtls_aes_setkey_enc(&aes_ctx, reinterpret_cast<const unsigned char*>(password.utf8().get_data()), keybits);
 	if (mbedtls_erro != OK){
 		mbedtls_aes_free(&aes_ctx);
 		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_aes_setkey_enc");
@@ -79,10 +96,13 @@ std::vector<unsigned char> Cripter::_aes_crypt(std::vector<unsigned char> input,
 		return output;
 	};
 
+
+
 	switch (algorith) {
 
 		case EBC: {
-			mbedtls_erro = mbedtls_aes_crypt_ecb(&aes_ctx, mode, input.data(), output.data());
+			//mbedtls_erro = mbedtls_aes_crypt_ecb(&aes_ctx, mode, input.data(), output.data());
+			mbedtls_erro = mbedtls_aes_crypt_ecb(&aes_ctx, mode, input.ptr(), output.ptrw());
 			mbedtls_aes_free(&aes_ctx);
 			if (mbedtls_erro != OK){
 				String _err = mbed_error_msn(mbedtls_erro, "mbedtls_aes_crypt_ecb");
@@ -95,19 +115,25 @@ std::vector<unsigned char> Cripter::_aes_crypt(std::vector<unsigned char> input,
 
 		case CBC: {
 			if (mode == MBEDTLS_AES_ENCRYPT){
+/*
 				if (add_pkcs7_padding(input, input, AES_BLOCK_SIZE) != OK){
 					WARN_PRINT(String("Invalid parameter. AES block must be 16 Bytes."));
 					mbedtls_aes_free(&aes_ctx);
 					return output;
 				}
+*/
+				input = add_pkcs7_padding(input, AES_BLOCK_SIZE);
 			}
 
-			unsigned char iv_copy[16];
-			memcpy(iv_copy, iv.data(), 16);
+		//	unsigned char iv_copy[16];
+		//	memcpy(iv_copy, iv.data(), 16);
 
-			mbedtls_erro = mbedtls_aes_crypt_cbc(&aes_ctx, mode, input.size(), iv_copy, input.data(), output.data());
-			mbedtls_aes_free(&aes_ctx);
+			PackedByteArray iv_copy = iv.duplicate();
 
+
+
+			//mbedtls_erro = mbedtls_aes_crypt_cbc(&aes_ctx, mode, input.size(), iv_copy, input.data(), output.data());
+			mbedtls_erro = mbedtls_aes_crypt_cbc(&aes_ctx, mode, input.size(), iv_copy.ptrw(), input.ptr(), output.ptrw());
 			if (mbedtls_erro != OK){
 				mbedtls_aes_free(&aes_ctx);
 				String _err = mbed_error_msn(mbedtls_erro, "mbedtls_aes_crypt_cbc");
@@ -116,6 +142,7 @@ std::vector<unsigned char> Cripter::_aes_crypt(std::vector<unsigned char> input,
 			}
 
 			if (mode == MBEDTLS_AES_DECRYPT){
+/*
 				Error _err = remove_pkcs7_padding(output, output, AES_BLOCK_SIZE);
 				if ( _err == ERR_INVALID_PARAMETER){
 					WARN_PRINT("Block size out of parameter.");
@@ -123,6 +150,8 @@ std::vector<unsigned char> Cripter::_aes_crypt(std::vector<unsigned char> input,
 				else if(_err == ERR_INVALID_DATA){
 					WARN_PRINT(String("Input buffer contains invalid Padding."));
 				}
+*/
+				output = remove_pkcs7_padding(output, AES_BLOCK_SIZE);
 			}
 			return output;
 		}
@@ -130,13 +159,15 @@ std::vector<unsigned char> Cripter::_aes_crypt(std::vector<unsigned char> input,
 
 
 		case CFB128:{
-			unsigned char iv_copy[16];
-			memcpy(iv_copy, iv.data(), 16);
+	//		unsigned char iv_copy[16];
+	//		memcpy(iv_copy, iv.data(), 16);
 			size_t iv_off = 0;
 
-			mbedtls_erro = mbedtls_aes_crypt_cfb128(&aes_ctx, mode, input.size(), &iv_off, iv_copy, input.data(), output.data());
-			mbedtls_aes_free(&aes_ctx);
+			PackedByteArray iv_copy = iv.duplicate();
 
+	//		mbedtls_erro = mbedtls_aes_crypt_cfb128(&aes_ctx, mode, input.size(), &iv_off, iv_copy, input.data(), output.data());
+			mbedtls_erro = mbedtls_aes_crypt_cfb128(&aes_ctx, mode, input.size(), &iv_off, iv_copy.ptrw(), input.ptr(), output.ptrw());
+			mbedtls_aes_free(&aes_ctx);
 			if (mbedtls_erro != OK){
 				String _err = mbed_error_msn(mbedtls_erro, "mbedtls_aes_crypt_cfb128");
 				WARN_PRINT(String("CFB128 Encryption error: -0x%04x\n") + String::num_int64(-mbedtls_erro, 16) + _err);
@@ -147,10 +178,11 @@ std::vector<unsigned char> Cripter::_aes_crypt(std::vector<unsigned char> input,
 
 
 		case CFB8:{
-			unsigned char iv_copy[16];
-			memcpy(iv_copy, iv.data(), 16);
+	//		unsigned char iv_copy[16];
+	//		memcpy(iv_copy, iv.data(), 16);
+			PackedByteArray iv_copy = iv.duplicate();
 
-			mbedtls_erro = mbedtls_aes_crypt_cfb8(&aes_ctx, mode, input.size(), iv_copy, input.data(), output.data());
+			mbedtls_erro = mbedtls_aes_crypt_cfb8(&aes_ctx, mode, input.size(), iv_copy.ptrw(), input.ptr(), output.ptrw());
 			mbedtls_aes_free(&aes_ctx);
 			if (mbedtls_erro != OK){
 				String _err = mbed_error_msn(mbedtls_erro, "mbedtls_aes_crypt_cfb8");
@@ -162,11 +194,13 @@ std::vector<unsigned char> Cripter::_aes_crypt(std::vector<unsigned char> input,
 
 
 		case OFB:{
-			unsigned char iv_copy[16];
-			memcpy(iv_copy, iv.data(), 16);
+		//	unsigned char iv_copy[16];
+		//	memcpy(iv_copy, iv.data(), 16);
+			
+			PackedByteArray iv_copy = iv.duplicate();
 			size_t iv_off = 0;
 
-			mbedtls_erro = mbedtls_aes_crypt_ofb(&aes_ctx, input.size(), &iv_off, iv_copy, input.data(), output.data());
+			mbedtls_erro = mbedtls_aes_crypt_ofb(&aes_ctx, input.size(), &iv_off, iv_copy.ptrw(), input.ptr(), output.ptrw());
 			mbedtls_aes_free(&aes_ctx);
 			if (mbedtls_erro != OK){
 				String _err = mbed_error_msn(mbedtls_erro, "mbedtls_aes_crypt_ofb");
@@ -177,14 +211,20 @@ std::vector<unsigned char> Cripter::_aes_crypt(std::vector<unsigned char> input,
 		}
 		break;
 
+/*
 		case CTR: {
-			unsigned char nonce_counter[16];
-			memcpy(nonce_counter, iv.data(), 16);
-			unsigned char stream_block[16];
-			memset(stream_block, 0, 16);
+		//	unsigned char nonce_counter[16];
+		//	memcpy(nonce_counter, iv.data(), 16);
+		//	unsigned char stream_block[16];
+		//	memset(stream_block, 0, 16);
 			size_t nc_off = 0;
 
-			mbedtls_erro = mbedtls_aes_crypt_ctr(&aes_ctx, input.size(), &nc_off, nonce_counter, stream_block, input.data(), output.data());
+			PackedByteArray nonce_counter = iv.duplicate();
+			PackedByteArray stream_block;
+			stream_block.resize(AES_BLOCK_SIZE);
+			stream_block.fill(0);
+
+			mbedtls_erro = mbedtls_aes_crypt_ctr(&aes_ctx, input.size(), &nc_off, nonce_counter.ptrw(), stream_block.ptrw(), input.ptr(), output.ptrw());
 			mbedtls_aes_free(&aes_ctx);
 			if (mbedtls_erro != OK){
 				String _err = mbed_error_msn(mbedtls_erro, "mbedtls_aes_crypt_ctr");
@@ -193,10 +233,14 @@ std::vector<unsigned char> Cripter::_aes_crypt(std::vector<unsigned char> input,
 			return output;
 		}
 		break;
+*/
+
 
 
 
 	}; // switch case
+
+	return output;
 
 }
 
@@ -291,7 +335,7 @@ Variant Cripter::_gcm_crypt(
 
 
 // =============== ASYMMETRIC ===============
-
+//TODO criptografar a chave
 PackedStringArray Cripter::get_available_curves() {
 	PackedStringArray curve_names;
 	const mbedtls_ecp_curve_info* curve_info = mbedtls_ecp_curve_list();
@@ -302,37 +346,46 @@ PackedStringArray Cripter::get_available_curves() {
 	return curve_names;
 }
 
-Error Cripter::generate_pk_keys(
+Error Cripter::pk_generate_keys(
 	PK_TYPE algorithm_type,
 	Cripter::KeySize key_size,
 	const ECP_GROUP_ID curve,
 	FileFormat storage_format,
 	const String password,
 	const String p_private_key_filename,
-	const String p_public_key_filename,	
+	const String p_public_key_filename,
 	const String personalization
 	) {
 
 
-	// Create Variables 
-	unsigned char pri_output_buf[16000];
-	unsigned char pub_output_buf[16000];
+	// Create Variables
+	//unsigned char pri_output_buf[16000];
+	//unsigned char pub_output_buf[16000];
+
+	//std::vector<unsigned char> pri_output_buf(16000, 0);
+	//std::vector<unsigned char> pub_output_buf(16000, 0);
+
+	PackedByteArray pri_output_buf;
+	PackedByteArray pub_output_buf;
+	pri_output_buf.resize(16000);
+	pub_output_buf.resize(16000);
+
 	int pk_key_type;
 	int mbedtls_erro = 0;
 	const char* pers = personalization.utf8().get_data();
 
 	mbedtls_pk_type_t algorithm = static_cast<mbedtls_pk_type_t>(algorithm_type);
 	mbedtls_pk_context pk_key;
-    mbedtls_entropy_context entropy;
-    mbedtls_ctr_drbg_context ctr_drbg;
+	mbedtls_entropy_context entropy;
+	mbedtls_ctr_drbg_context ctr_drbg;
 
 
 	// Init Variables
-	memset(pri_output_buf, 0, sizeof(pri_output_buf));
-	memset(pub_output_buf, 0, sizeof(pub_output_buf));
+	//memset(pri_output_buf, 0, sizeof(pri_output_buf));
+	//memset(pub_output_buf, 0, sizeof(pub_output_buf));
 	mbedtls_pk_init(&pk_key);
-    mbedtls_entropy_init(&entropy);
-    mbedtls_ctr_drbg_init(&ctr_drbg);
+	mbedtls_entropy_init(&entropy);
+	mbedtls_ctr_drbg_init(&ctr_drbg);
 
 	String private_key_filename = ensure_global_path(p_private_key_filename);
 	String public_key_filename = ensure_global_path(p_public_key_filename);
@@ -383,7 +436,7 @@ Error Cripter::generate_pk_keys(
 
 	// ===================================== RSA =====================================
 	if (pk_key_type == TYPE_RSA){
-        mbedtls_erro = mbedtls_rsa_gen_key(mbedtls_pk_rsa(pk_key), mbedtls_ctr_drbg_random, &ctr_drbg, (unsigned int)key_size, EXPONENT); 
+		mbedtls_erro = mbedtls_rsa_gen_key(mbedtls_pk_rsa(pk_key), mbedtls_ctr_drbg_random, &ctr_drbg, (unsigned int)key_size, EXPONENT);
 		if (mbedtls_erro != OK) {
 			mbedtls_pk_free(&pk_key);
 			mbedtls_entropy_free(&entropy);
@@ -394,7 +447,7 @@ Error Cripter::generate_pk_keys(
 	}
 	// ===================================== ECC =====================================
 	else if (pk_key_type == TYPE_ECC){
-        mbedtls_erro = mbedtls_ecp_gen_key((mbedtls_ecp_group_id)algorithm, mbedtls_pk_ec(pk_key), mbedtls_ctr_drbg_random, &ctr_drbg);
+		mbedtls_erro = mbedtls_ecp_gen_key((mbedtls_ecp_group_id)algorithm, mbedtls_pk_ec(pk_key), mbedtls_ctr_drbg_random, &ctr_drbg);
 		if (mbedtls_erro != OK) {
 			mbedtls_pk_free(&pk_key);
 			mbedtls_entropy_free(&entropy);
@@ -411,9 +464,9 @@ Error Cripter::generate_pk_keys(
 
 	// Export keys ====
 
-	// PEM 
+	// PEM
 	if (storage_format == PEM){
-		mbedtls_erro = mbedtls_pk_write_key_pem(&pk_key, pri_output_buf, sizeof(pri_output_buf));
+		mbedtls_erro = mbedtls_pk_write_key_pem(&pk_key, pri_output_buf.ptrw(), pri_output_buf.size());
 		if (mbedtls_erro != OK){
 			mbedtls_pk_free(&pk_key);
 			mbedtls_ctr_drbg_free(&ctr_drbg);
@@ -421,26 +474,7 @@ Error Cripter::generate_pk_keys(
 			ERR_FAIL_V_MSG(FAILED, mbed_error_msn(mbedtls_erro, "mbedtls_pk_write_key_pem"));
 		}
 
-		mbedtls_erro = mbedtls_pk_write_pubkey_pem(&pk_key, pub_output_buf, sizeof(pub_output_buf));
-		if (mbedtls_erro != OK){
-			mbedtls_pk_free(&pk_key);
-			mbedtls_ctr_drbg_free(&ctr_drbg);
-			mbedtls_entropy_free(&entropy);
-			ERR_FAIL_V_MSG(FAILED, mbed_error_msn(mbedtls_erro, "mbedtls_pk_write_pubkey_pem"));
-		}
-	} 
-
-	// DER 
-	else if (storage_format == DER){
-		mbedtls_erro = mbedtls_pk_write_key_der(&pk_key, pri_output_buf, sizeof(pri_output_buf));
-		if (mbedtls_erro != OK){
-			mbedtls_pk_free(&pk_key);
-			mbedtls_ctr_drbg_free(&ctr_drbg);
-			mbedtls_entropy_free(&entropy);
-			ERR_FAIL_V_MSG(FAILED, mbed_error_msn(mbedtls_erro, "mbedtls_pk_write_key_pem"));
-		}
-
-		mbedtls_erro = mbedtls_pk_write_pubkey_der(&pk_key, pub_output_buf, sizeof(pub_output_buf));
+		mbedtls_erro = mbedtls_pk_write_pubkey_pem(&pk_key, pub_output_buf.ptrw(), pub_output_buf.size());
 		if (mbedtls_erro != OK){
 			mbedtls_pk_free(&pk_key);
 			mbedtls_ctr_drbg_free(&ctr_drbg);
@@ -449,26 +483,60 @@ Error Cripter::generate_pk_keys(
 		}
 	}
 
-	// Write files ====
+	// DER
+	else if (storage_format == DER){
+		mbedtls_erro = mbedtls_pk_write_key_der(&pk_key, pri_output_buf.ptrw(), pri_output_buf.size());
+		if (mbedtls_erro != OK){
+			mbedtls_pk_free(&pk_key);
+			mbedtls_ctr_drbg_free(&ctr_drbg);
+			mbedtls_entropy_free(&entropy);
+			ERR_FAIL_V_MSG(FAILED, mbed_error_msn(mbedtls_erro, "mbedtls_pk_write_key_pem"));
+		}
+
+		mbedtls_erro = mbedtls_pk_write_pubkey_der(&pk_key, pub_output_buf.ptrw(), pub_output_buf.size());
+		if (mbedtls_erro != OK){
+			mbedtls_pk_free(&pk_key);
+			mbedtls_ctr_drbg_free(&ctr_drbg);
+			mbedtls_entropy_free(&entropy);
+			ERR_FAIL_V_MSG(FAILED, mbed_error_msn(mbedtls_erro, "mbedtls_pk_write_pubkey_pem"));
+		}
+	}
+
+
+	// Encrypt key
+	if (not password.is_empty()){
+		PackedByteArray iv = generate_iv(AES_BLOCK_SIZE, String("Encrypt PKey"));
+		String derivated_key = derive_key_pbkdf2(password, password.sha256_text());
+		pri_output_buf = _aes_crypt(pri_output_buf, derivated_key, iv, CBC, BITS_256, MBEDTLS_AES_ENCRYPT);
+    }
+
+
+	// WRITE FILES 
 
 	// Private
 	Ref<FileAccess> f_private = FileAccess::open(private_key_filename, FileAccess::WRITE);
 	ERR_FAIL_COND_V_MSG(f_private.is_null(), ERR_INVALID_PARAMETER, "Cannot save private RSA key to file: '" + private_key_filename + "'.");
-	size_t pri_len = strlen((char *)pri_output_buf);
-	f_private->store_buffer(pri_output_buf, pri_len);
-	mbedtls_platform_zeroize(pri_output_buf, sizeof(pri_output_buf));
+//	size_t pri_len = strlen((char *)pri_output_buf);
+//	f_private->store_buffer(pri_output_buf, pri_len);
+//	mbedtls_platform_zeroize(pri_output_buf, sizeof(pri_output_buf));
+	f_private->store_buffer(pri_output_buf);
+	pri_output_buf.fill(0); //zeroize
+
 
 	// Public
 	Ref<FileAccess> f_public = FileAccess::open(public_key_filename, FileAccess::WRITE);
 	ERR_FAIL_COND_V_MSG(f_public.is_null(), ERR_INVALID_PARAMETER, "Cannot save public RSA key to file: '" + public_key_filename + "'.");
-	size_t pub_len = strlen((char *)pub_output_buf);
-	f_public->store_buffer(pub_output_buf, pub_len);
-	mbedtls_platform_zeroize(pub_output_buf, sizeof(pub_output_buf));
+//	size_t pub_len = strlen((char *)pub_output_buf);
+//	f_public->store_buffer(pub_output_buf, pub_len);
+//	mbedtls_platform_zeroize(pub_output_buf, sizeof(pub_output_buf));
+	f_private->store_buffer(pub_output_buf);
+	pub_output_buf.fill(0); //zeroize
+
 
 	// Clean up
-    mbedtls_pk_free(&pk_key);
-    mbedtls_ctr_drbg_free(&ctr_drbg);
-    mbedtls_entropy_free(&entropy);
+	mbedtls_pk_free(&pk_key);
+	mbedtls_ctr_drbg_free(&ctr_drbg);
+	mbedtls_entropy_free(&entropy);
 
 	return OK;
 
@@ -476,12 +544,91 @@ Error Cripter::generate_pk_keys(
 
 
 
+Variant Cripter::pk_match_keys(const String p_private_key_path, const String p_public_key_path, const String password){
 
-Dictionary Cripter::analyze_pk_key(String p_key_path) {
+	const String private_key_path = ensure_global_path(p_private_key_path);
+	const String public_key_path = ensure_global_path(p_public_key_path);
+	int mbedtls_erro;
+	const char *pers = "pk_match_keys";
+
+	mbedtls_entropy_context entropy;
+	mbedtls_ctr_drbg_context ctr_drbg;
+	mbedtls_pk_context private_ctx, public_ctx;
+	
+	mbedtls_pk_init(&private_ctx);
+	mbedtls_pk_init(&public_ctx);
+	mbedtls_entropy_init(&entropy);
+	mbedtls_ctr_drbg_init(&ctr_drbg);
+
+
+	mbedtls_erro = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, reinterpret_cast<const unsigned char*>(pers), strlen(pers));
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&private_ctx);
+		mbedtls_pk_free(&public_ctx);
+		mbedtls_ctr_drbg_free(&ctr_drbg);
+		mbedtls_entropy_free(&entropy);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_ctr_drbg_seed");
+		ERR_FAIL_V_EDMSG(mbedtls_erro, String("Failed to seed random number generator: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+
+	if (password.is_empty()){
+		mbedtls_erro = mbedtls_pk_parse_keyfile(&private_ctx, private_key_path.utf8().get_data(), nullptr, mbedtls_ctr_drbg_random, &ctr_drbg);
+	}else{
+		mbedtls_erro = mbedtls_pk_parse_keyfile(&private_ctx, private_key_path.utf8().get_data(), password.utf8().get_data(), mbedtls_ctr_drbg_random, &ctr_drbg);
+	}
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&private_ctx);
+		mbedtls_pk_free(&public_ctx);
+		mbedtls_ctr_drbg_free(&ctr_drbg);
+		mbedtls_entropy_free(&entropy);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_pk_parse_keyfile");
+		ERR_FAIL_V_EDMSG(mbedtls_erro, String("Error parsing private key.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+
+	mbedtls_erro = mbedtls_pk_parse_public_keyfile(&public_ctx, public_key_path.utf8().get_data());
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&private_ctx);
+		mbedtls_pk_free(&public_ctx);
+		mbedtls_ctr_drbg_free(&ctr_drbg);
+		mbedtls_entropy_free(&entropy);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_pk_parse_public_keyfile");
+		ERR_FAIL_V_EDMSG(mbedtls_erro, String("Error parsing public key.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+	
+	mbedtls_erro = mbedtls_pk_check_pair(&public_ctx, &private_ctx, mbedtls_ctr_drbg_random, &ctr_drbg);
+	mbedtls_pk_free(&private_ctx);
+	mbedtls_pk_free(&public_ctx);
+	mbedtls_ctr_drbg_free(&ctr_drbg);
+	mbedtls_entropy_free(&entropy);
+	if (mbedtls_erro != OK) {
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_pk_parse_public_keyfile");
+		ERR_FAIL_V_EDMSG(mbedtls_erro, String("Error parsing public key.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+
+	if (mbedtls_erro == OK){
+		return true;
+	}
+
+	return mbedtls_erro;
+
+}
+
+
+
+
+
+
+Dictionary Cripter::pk_analyze_key(const String p_key_path) {
 
 	Dictionary ret;
 	int mbedtls_error = 0;
 	const char *pers = "pk_parse_key";
+	String key_path = ensure_global_path(p_key_path);
+
 
 	mbedtls_pk_context pk;
 	mbedtls_entropy_context entropy;
@@ -493,7 +640,7 @@ Dictionary Cripter::analyze_pk_key(String p_key_path) {
 
 
 	mbedtls_error = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, reinterpret_cast<const unsigned char*>(pers), strlen(pers));
-	if (mbedtls_error != 0) {
+	if (mbedtls_error != OK) {
 		mbedtls_pk_free(&pk);
 		mbedtls_entropy_free(&entropy);
 		mbedtls_ctr_drbg_free(&ctr_drbg);
@@ -502,20 +649,20 @@ Dictionary Cripter::analyze_pk_key(String p_key_path) {
 	}
 
 	// Try to load as private key
-	const char *key_path = p_key_path.utf8().get_data();
-	mbedtls_error = mbedtls_pk_parse_keyfile(&pk, key_path, nullptr, mbedtls_ctr_drbg_random, &ctr_drbg);
+	//const char *key_path = p_key_path.utf8().get_data();
+	mbedtls_error = mbedtls_pk_parse_keyfile(&pk, key_path.utf8().get_data(), nullptr, mbedtls_ctr_drbg_random, &ctr_drbg);
 	bool is_private = false;
 
 	// Determines whether it is a public or private key.
-	if (mbedtls_error != 0) {
+	if (mbedtls_error != OK) {
 		// Try to load as public key
-		mbedtls_error = mbedtls_pk_parse_public_keyfile(&pk, key_path);
-		if (mbedtls_error != 0) {
+		mbedtls_error = mbedtls_pk_parse_public_keyfile(&pk, key_path.utf8().get_data());
+		if (mbedtls_error != OK) {
 			mbedtls_pk_free(&pk);
 			mbedtls_entropy_free(&entropy);
 			mbedtls_ctr_drbg_free(&ctr_drbg);
 			String _err = mbed_error_msn(mbedtls_error, "mbedtls_pk_parse_public_keyfile");
-			ERR_FAIL_V_EDMSG(ret, String("Failed to load key.: -0x") + String::num_int64(-mbedtls_error, 16) + _err);
+			ERR_FAIL_V_EDMSG(ret, String("Failed to parse public keyfile.: -0x") + String::num_int64(-mbedtls_error, 16) + _err);
 		}
 		ret["CATEGORY"] = "PUBLIC";
 	} else {
@@ -537,13 +684,13 @@ Dictionary Cripter::analyze_pk_key(String p_key_path) {
 	ret["TYPE"] = static_cast<PK_TYPE>(key_type);
 
 
-	// Processes EC keys.
+	//====================================== ECP ====================================================
 	if (
-		static_cast<mbedtls_pk_type_t>(pk_type) == mbedtls_pk_type_t::MBEDTLS_PK_ECKEY || 
+		static_cast<mbedtls_pk_type_t>(pk_type) == mbedtls_pk_type_t::MBEDTLS_PK_ECKEY ||
 		static_cast<mbedtls_pk_type_t>(pk_type) == mbedtls_pk_type_t::MBEDTLS_PK_ECKEY_DH ||
 		static_cast<mbedtls_pk_type_t>(pk_type) == mbedtls_pk_type_t::MBEDTLS_PK_ECDSA
 	){
-		
+
 		// Get EC Context
 		mbedtls_ecp_keypair *ec_key = mbedtls_pk_ec(pk);
 		if (ec_key == NULL) {
@@ -567,10 +714,10 @@ Dictionary Cripter::analyze_pk_key(String p_key_path) {
 		} else {
 			ret["CURVE"] = "Unknown";
 		}
-		
+
 		if (is_private){
 			mbedtls_error = mbedtls_ecp_check_privkey(&ec_key->private_grp, &ec_key->private_d);
-			if (mbedtls_error != 0) {
+			if (mbedtls_error != OK) {
 				mbedtls_pk_free(&pk);
 				mbedtls_entropy_free(&entropy);
 				mbedtls_ctr_drbg_free(&ctr_drbg);
@@ -581,7 +728,7 @@ Dictionary Cripter::analyze_pk_key(String p_key_path) {
 		}
 		else{
 			mbedtls_error = mbedtls_ecp_check_pubkey(&ec_key->private_grp, &ec_key->private_Q);
-			if (mbedtls_error != 0) {
+			if (mbedtls_error != OK) {
 				mbedtls_pk_free(&pk);
 				mbedtls_entropy_free(&entropy);
 				mbedtls_ctr_drbg_free(&ctr_drbg);
@@ -620,12 +767,10 @@ Dictionary Cripter::analyze_pk_key(String p_key_path) {
 		mbedtls_ecp_keypair_free(ec_key);
 
 
-//==========================================================================================
-
-
+	//====================================== RSA ====================================================
 	} else if (
-		static_cast<mbedtls_pk_type_t>(pk_type) == mbedtls_pk_type_t::MBEDTLS_PK_RSA || 
-		static_cast<mbedtls_pk_type_t>(pk_type) == mbedtls_pk_type_t::MBEDTLS_PK_RSA_ALT || 
+		static_cast<mbedtls_pk_type_t>(pk_type) == mbedtls_pk_type_t::MBEDTLS_PK_RSA ||
+		static_cast<mbedtls_pk_type_t>(pk_type) == mbedtls_pk_type_t::MBEDTLS_PK_RSA_ALT ||
 		static_cast<mbedtls_pk_type_t>(pk_type) == mbedtls_pk_type_t::MBEDTLS_PK_RSASSA_PSS
 	) {
 
@@ -643,7 +788,7 @@ Dictionary Cripter::analyze_pk_key(String p_key_path) {
 
 		mbedtls_rsa_free(rsa);
 
-//==========================================================================================
+	//==========================================================================================
 
 
 	} else {
@@ -656,6 +801,318 @@ Dictionary Cripter::analyze_pk_key(String p_key_path) {
 	mbedtls_ctr_drbg_free(&ctr_drbg);
 	return ret;
 }
+
+
+
+
+
+
+
+PackedByteArray Cripter::pk_sign(const String private_key_path, const PackedByteArray data, const String password){
+
+	int mbedtls_erro;
+	const char *pers = "pk_sign";
+	PackedByteArray hash;
+	PackedByteArray signature;
+	const String key_path = ensure_global_path(private_key_path);
+
+	hash.resize(HASH_SIZE_SHA_256);
+	signature.resize(MBEDTLS_PK_SIGNATURE_MAX_SIZE);
+
+	mbedtls_pk_context pk_key;
+	mbedtls_md_context_t md_ctx;
+	mbedtls_entropy_context entropy;
+	mbedtls_ctr_drbg_context ctr_drbg;
+	
+	mbedtls_pk_init(&pk_key);
+	mbedtls_md_init(&md_ctx);
+	mbedtls_entropy_init(&entropy);
+	mbedtls_ctr_drbg_init(&ctr_drbg);
+
+
+	mbedtls_erro = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char *)pers, strlen(pers)) ;
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&pk_key);
+		mbedtls_md_free(&md_ctx);
+		mbedtls_entropy_free(&entropy);
+		mbedtls_ctr_drbg_free(&ctr_drbg);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_ctr_drbg_seed");
+		ERR_FAIL_V_EDMSG(signature, String("Failed to seed the random generator: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+
+	if (password.is_empty()){
+		mbedtls_erro = mbedtls_pk_parse_keyfile( &pk_key, key_path.utf8().get_data(), nullptr, mbedtls_ctr_drbg_random, &ctr_drbg);
+	}else{
+		mbedtls_erro = mbedtls_pk_parse_keyfile(&pk_key, key_path.utf8().get_data(), password.utf8().get_data(), mbedtls_ctr_drbg_random, &ctr_drbg);
+	}
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&pk_key);
+		mbedtls_md_free(&md_ctx);
+		mbedtls_entropy_free(&entropy);
+		mbedtls_ctr_drbg_free(&ctr_drbg);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_pk_parse_keyfile");
+		ERR_FAIL_V_EDMSG(signature, String("Failed to parse key file.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+
+	mbedtls_erro = mbedtls_md_setup(&md_ctx, mbedtls_md_info_from_type(MBEDTLS_MD_SHA256), 0);
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&pk_key);
+		mbedtls_md_free(&md_ctx);
+		mbedtls_entropy_free(&entropy);
+		mbedtls_ctr_drbg_free(&ctr_drbg);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_md_setup");
+		ERR_FAIL_V_EDMSG(signature, String("Failed to selects the message digest algorithm.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+	mbedtls_erro = mbedtls_md_starts(&md_ctx);
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&pk_key);
+		mbedtls_md_free(&md_ctx);
+		mbedtls_entropy_free(&entropy);
+		mbedtls_ctr_drbg_free(&ctr_drbg);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_md_starts");
+		ERR_FAIL_V_EDMSG(signature, String("Failed to starts a message-digest computation..: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+	mbedtls_erro =  mbedtls_md_update(&md_ctx, data.ptr(), data.size());
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&pk_key);
+		mbedtls_md_free(&md_ctx);
+		mbedtls_entropy_free(&entropy);
+		mbedtls_ctr_drbg_free(&ctr_drbg);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_md_update");
+		ERR_FAIL_V_EDMSG(signature, String("Failed to feeds an input buffer.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+    mbedtls_erro = mbedtls_md_finish(&md_ctx, hash.ptrw());
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&pk_key);
+		mbedtls_md_free(&md_ctx);
+		mbedtls_entropy_free(&entropy);
+		mbedtls_ctr_drbg_free(&ctr_drbg);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_md_finish");
+		ERR_FAIL_V_EDMSG(signature, String("Failed to finishes the digest operation.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+	size_t sig_len = signature.size();
+	mbedtls_erro = mbedtls_pk_sign(&pk_key, MBEDTLS_MD_SHA256, hash.ptrw(), hash.size(),  signature.ptrw(), signature.size(), &sig_len, mbedtls_ctr_drbg_random, &ctr_drbg);
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&pk_key);
+		mbedtls_md_free(&md_ctx);
+		mbedtls_entropy_free(&entropy);
+		mbedtls_ctr_drbg_free(&ctr_drbg);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_pk_sign");
+		ERR_FAIL_V_EDMSG(signature, String("Failed to make signature.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+	mbedtls_pk_free(&pk_key);
+	mbedtls_md_free(&md_ctx);
+	mbedtls_entropy_free(&entropy);
+	mbedtls_ctr_drbg_free(&ctr_drbg);
+
+	return signature;
+
+}
+
+
+
+Variant Cripter::pk_verify_signature(const String public_key_path, const PackedByteArray data, const String password){
+
+	int mbedtls_erro;
+	PackedByteArray signature;
+	PackedByteArray hash;
+	hash.resize(HASH_SIZE_SHA_256);
+
+	mbedtls_pk_context pk_key;
+	mbedtls_md_context_t md_ctx;
+	
+	mbedtls_md_init(&md_ctx);
+	mbedtls_pk_init(&pk_key);
+
+	const String key_path = ensure_global_path(public_key_path);
+
+	mbedtls_erro = mbedtls_pk_parse_public_keyfile(&pk_key, key_path.utf8().get_data());
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&pk_key);
+		mbedtls_md_free(&md_ctx);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_pk_parse_public_keyfile");
+		ERR_FAIL_V_EDMSG(signature, String("Failed to parse public keyfile.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+	mbedtls_erro = mbedtls_md_setup(&md_ctx, mbedtls_md_info_from_type(MBEDTLS_MD_SHA256), 0);
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&pk_key);
+		mbedtls_md_free(&md_ctx);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_md_setup");
+		ERR_FAIL_V_EDMSG(signature, String("Failed to selects the message digest algorithm.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+	mbedtls_erro = mbedtls_md_starts(&md_ctx);
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&pk_key);
+		mbedtls_md_free(&md_ctx);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_md_starts");
+		ERR_FAIL_V_EDMSG(signature, String("Failed to starts a message-digest computation..: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+	mbedtls_erro =  mbedtls_md_update(&md_ctx, data.ptr(), data.size());
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&pk_key);
+		mbedtls_md_free(&md_ctx);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_md_update");
+		ERR_FAIL_V_EDMSG(signature, String("Failed to feeds an input buffer.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+    mbedtls_erro = mbedtls_md_finish(&md_ctx, hash.ptrw());
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&pk_key);
+		mbedtls_md_free(&md_ctx);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_md_finish");
+		ERR_FAIL_V_EDMSG(signature, String("Failed to finishes the digest operation.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+	mbedtls_erro = mbedtls_pk_verify(&pk_key, MBEDTLS_MD_SHA256, hash.ptr(), hash.size(), signature.ptr(), signature.size());
+	mbedtls_pk_free(&pk_key);
+	mbedtls_md_free(&md_ctx);
+
+	if (mbedtls_erro == OK){
+		return true;
+	}
+
+	return mbedtls_erro;
+
+}
+
+
+
+PackedByteArray Cripter::pk_encrypt(const PackedByteArray plaintext, const String p_public_key_path){
+
+	size_t olen = plaintext.size();
+	PackedByteArray output;
+	output.resize(olen);
+	int mbedtls_erro;
+	const char *pers = "pk_encrypt";
+	const String key_path = ensure_global_path(p_public_key_path);
+
+	// Init Context
+	mbedtls_pk_context pk_key;
+	mbedtls_entropy_context entropy;
+	mbedtls_ctr_drbg_context ctr_drbg;
+
+	mbedtls_pk_init(&pk_key);
+	mbedtls_entropy_init(&entropy);
+	mbedtls_ctr_drbg_init(&ctr_drbg);
+
+	mbedtls_erro = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char *)pers, strlen(pers)) ;
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&pk_key);
+		mbedtls_entropy_free(&entropy);
+		mbedtls_ctr_drbg_free(&ctr_drbg);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_ctr_drbg_seed");
+		ERR_FAIL_V_EDMSG(output, String("Failed to seed the random generator: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+	mbedtls_erro = mbedtls_pk_parse_public_keyfile(&pk_key, key_path.utf8().get_data());
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&pk_key);
+		mbedtls_entropy_free(&entropy);
+		mbedtls_ctr_drbg_free(&ctr_drbg);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_pk_parse_public_keyfile");
+		ERR_FAIL_V_EDMSG(output, String("Failed to parse public keyfile.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+	const size_t max_rsa_input_size = get_max_rsa_input_size(&pk_key);
+	if (olen >= max_rsa_input_size){
+		mbedtls_pk_free(&pk_key);
+		mbedtls_entropy_free(&entropy);
+		mbedtls_ctr_drbg_free(&ctr_drbg);
+		ERR_FAIL_V_EDMSG(output, "The input data compliance exceeds the key capacity.");
+	}
+
+	mbedtls_erro = mbedtls_pk_encrypt(&pk_key, plaintext.ptr(), plaintext.size(), output.ptrw(), &olen, olen, mbedtls_ctr_drbg_random, &ctr_drbg);
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&pk_key);
+		mbedtls_entropy_free(&entropy);
+		mbedtls_ctr_drbg_free(&ctr_drbg);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_pk_encrypt");
+		ERR_FAIL_V_EDMSG(output, String("Failed to encrypt data.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+	mbedtls_pk_free( &pk_key);
+	mbedtls_ctr_drbg_free(&ctr_drbg);
+	mbedtls_entropy_free(&entropy);
+
+	return output;
+}
+
+
+PackedByteArray Cripter::pk_decrypt(PackedByteArray ciphertext, String p_private_key_path, String password){
+
+	const String key_path = ensure_global_path(p_private_key_path);
+	int mbedtls_erro;
+
+	size_t olen = ciphertext.size();
+	PackedByteArray output;
+	output.resize(olen);
+	const char *pers = "pk_decrypt";
+
+
+	// Init Context
+	mbedtls_pk_context pk_key;
+	mbedtls_entropy_context entropy;
+	mbedtls_ctr_drbg_context ctr_drbg;
+
+	mbedtls_pk_init(&pk_key);
+	mbedtls_entropy_init(&entropy);
+	mbedtls_ctr_drbg_init(&ctr_drbg);
+
+
+	if (password.is_empty()){
+		mbedtls_erro = mbedtls_pk_parse_keyfile(&pk_key, key_path.utf8().get_data(), nullptr, mbedtls_ctr_drbg_random, &ctr_drbg);
+	}else{
+		mbedtls_erro = mbedtls_pk_parse_keyfile(&pk_key, key_path.utf8().get_data(), password.utf8().get_data(), mbedtls_ctr_drbg_random, &ctr_drbg);
+	}
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&pk_key);
+		mbedtls_entropy_free(&entropy);
+		mbedtls_ctr_drbg_free(&ctr_drbg);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_pk_parse_keyfile");
+		ERR_FAIL_V_EDMSG(output, String("Failed to parse key file.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+
+	mbedtls_erro = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (const unsigned char *)pers, strlen(pers)) ;
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&pk_key);
+		mbedtls_entropy_free(&entropy);
+		mbedtls_ctr_drbg_free(&ctr_drbg);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_ctr_drbg_seed");
+		ERR_FAIL_V_EDMSG(output, String("Failed to seed the random generator: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+	mbedtls_erro = mbedtls_pk_decrypt(&pk_key, ciphertext.ptr(), ciphertext.size(), output.ptrw(), &olen, olen, mbedtls_ctr_drbg_random, &ctr_drbg);
+	if (mbedtls_erro != OK) {
+		mbedtls_pk_free(&pk_key);
+		mbedtls_entropy_free(&entropy);
+		mbedtls_ctr_drbg_free(&ctr_drbg);
+		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_pk_decrypt");
+		ERR_FAIL_V_EDMSG(output, String("Failed to decrypt data.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+	}
+
+	mbedtls_pk_free(&pk_key);
+	mbedtls_ctr_drbg_free(&ctr_drbg);
+	mbedtls_entropy_free(&entropy);
+
+	return output;
+}
+
+
+
+
+
+
 
 
 
@@ -737,7 +1194,6 @@ String Cripter::ensure_global_path(String  p_path){
 }
 
 
-
 String Cripter::mbed_error_msn(int mbedtls_erro, const char* p_function){
 	char mbedtls_erro_text[MBEDTLS_ERROR_BUFFER_LENGTH];
 	mbedtls_strerror(mbedtls_erro, mbedtls_erro_text, MBEDTLS_ERROR_BUFFER_LENGTH);
@@ -763,7 +1219,6 @@ std::vector<unsigned char> Cripter::GDstring_to_STDvector(const String p_string)
 	if (p_string.is_empty()) {
 		return std::vector<unsigned char>();
 	}
-
 	const char* data = p_string.utf8().get_data();
 	size_t size = p_string.size();
 	const unsigned char* unsigned_data = reinterpret_cast<const unsigned char*>(data);
@@ -773,7 +1228,7 @@ std::vector<unsigned char> Cripter::GDstring_to_STDvector(const String p_string)
 }
 
 
-Error Cripter::add_pkcs7_padding(const std::vector<unsigned char>& data, std::vector<unsigned char>& padded_data, size_t block_size) {
+Error Cripter::add_pkcs7_padding(const std::vector<unsigned char>& data, std::vector<unsigned char>& padded_data, const size_t block_size) {
 	if (block_size == 4 || block_size > 255) {
 		return ERR_INVALID_PARAMETER;
 	}
@@ -791,7 +1246,29 @@ Error Cripter::add_pkcs7_padding(const std::vector<unsigned char>& data, std::ve
 }
 
 
-Error Cripter::remove_pkcs7_padding(const std::vector<unsigned char>& padded_data, std::vector<unsigned char>& data, size_t block_size) {
+PackedByteArray Cripter::add_pkcs7_padding(PackedByteArray data, const size_t block_size) {
+	if (block_size == 4 || block_size > 255) {
+		WARN_PRINT("Invalid Padding");
+		return data;
+	}
+
+	size_t data_length = data.size();
+	size_t padding_length = block_size - (data_length % block_size);
+	if (padding_length == 0) {
+		padding_length = block_size;
+	}
+
+	PackedByteArray padded_data = data.duplicate();
+
+	PackedByteArray padd;
+	padd.resize(padding_length);
+	padd.fill(padding_length);
+	padded_data.append_array(padd);	
+	return padded_data;
+}
+
+
+Error Cripter::remove_pkcs7_padding(const std::vector<unsigned char>& padded_data, std::vector<unsigned char>& data, const size_t block_size) {
 	if (padded_data.empty() || padded_data.size() % block_size != 0) {
 		return ERR_INVALID_PARAMETER;
 	}
@@ -810,6 +1287,63 @@ Error Cripter::remove_pkcs7_padding(const std::vector<unsigned char>& padded_dat
 	data.assign(padded_data.begin(), padded_data.end() - padding_length);
 
 	return OK;
+}
+
+
+
+PackedByteArray Cripter::remove_pkcs7_padding(PackedByteArray padded_data, const size_t block_size) {
+	PackedByteArray data;
+	
+	if (padded_data.is_empty() || padded_data.size() % block_size != 0) {
+		WARN_PRINT("Invalid Padding");
+		return data;
+	}
+
+	const size_t padding_length = padded_data[padded_data.size() - 1];
+
+	if (padding_length == 0 || padding_length > block_size || padding_length > (const size_t)padded_data.size()) {
+		WARN_PRINT("Invalid Padding");
+		return data; 
+	}
+
+	data = padded_data.duplicate();
+	data.resize(data.size() - padding_length);
+	return data;
+}
+
+
+size_t Cripter::get_max_rsa_input_size(const mbedtls_pk_context *pk) {
+
+	const mbedtls_rsa_context *rsa = mbedtls_pk_rsa(*pk);
+	size_t key_size_bytes = mbedtls_rsa_get_len(rsa);
+	//int padding = rsa->padding;
+	const int *padding = &rsa->MBEDTLS_PRIVATE(padding);
+	const int *hash_id = &rsa->MBEDTLS_PRIVATE(hash_id);
+
+
+	size_t hash_len = 0;
+	switch (*hash_id) {
+		case MBEDTLS_MD_NONE:       hash_len = 0; break;
+		case MBEDTLS_MD_MD5:        hash_len = 16; break;
+		case MBEDTLS_MD_SHA1:       hash_len = 20; break;
+		case MBEDTLS_MD_SHA224:     hash_len = 28; break;
+		case MBEDTLS_MD_SHA256:     hash_len = 32; break;
+		case MBEDTLS_MD_SHA384:     hash_len = 48; break;
+		case MBEDTLS_MD_SHA512:     hash_len = 64; break;
+		case MBEDTLS_MD_RIPEMD160:  hash_len = 20; break;
+		default:
+			hash_len = (size_t)-1; break;
+	}
+
+	size_t max_data_size = 0;
+	if (*padding == MBEDTLS_RSA_PKCS_V15) {
+		max_data_size = key_size_bytes - 11; // PKCS#1 v1.5
+	} else if (*padding == MBEDTLS_RSA_PKCS_V21) {
+		max_data_size = key_size_bytes - 2 * hash_len - 2; // OAEP
+	} else {
+		return 0;
+	}
+	return max_data_size;
 }
 
 
@@ -839,11 +1373,16 @@ void Cripter::_bind_methods(){
 
 
 	// PK
-	ClassDB::bind_static_method("Cripter",D_METHOD("generate_pk_keys", "algorithm_type", "key_size", "curve_name", "storage_format", "password", "private_key_filename", "public_key_filename", "personalization"), &Cripter::generate_pk_keys, DEFVAL("key_generation"));
-	ClassDB::bind_static_method("Cripter", D_METHOD("analyze_pk_key", "key_path"), &Cripter::analyze_pk_key);
-	// Compare keys
-	// Encrypt
-	// Decript
+	ClassDB::bind_static_method("Cripter",D_METHOD("pk_generate_keys", "algorithm_type", "key_size", "curve_name", "storage_format", "password", "private_key_filename", "public_key_filename", "personalization"), &Cripter::pk_generate_keys, DEFVAL("key_generation"));
+	ClassDB::bind_static_method("Cripter", D_METHOD("pk_analyze_key", "key_path"), &Cripter::pk_analyze_key);
+	ClassDB::bind_static_method("Cripter", D_METHOD("pk_match_keys", "private_key_path", "public_key_path", "password"), &Cripter::pk_match_keys, DEFVAL(""));
+
+
+	ClassDB::bind_static_method("Cripter", D_METHOD("pk_encrypt", "plaintext", "key_path"), &Cripter::pk_encrypt);
+	ClassDB::bind_static_method("Cripter", D_METHOD("pk_decrypt", "ciphertext", "key_path", "password"), &Cripter::pk_encrypt, DEFVAL(""));
+
+	ClassDB::bind_static_method("Cripter", D_METHOD("pk_verify_signature", "private_key_path","data", "password"), &Cripter::pk_verify_signature, DEFVAL(""));
+	ClassDB::bind_static_method("Cripter", D_METHOD("pk_sign", "public_key_path","data", "password"), &Cripter::pk_sign, DEFVAL(""));
 
 
 
@@ -872,19 +1411,19 @@ void Cripter::_bind_methods(){
 
 
 	// ECP_GROUP_ID
-	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_NONE); 
-	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_SECP192R1); 
-	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_SECP224R1); 
+	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_NONE);
+	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_SECP192R1);
+	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_SECP224R1);
 	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_SECP256R1);
-	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_SECP384R1); 
-	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_SECP521R1); 
-	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_BP256R1); 
+	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_SECP384R1);
+	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_SECP521R1);
+	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_BP256R1);
 	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_BP384R1);
-	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_BP512R1); 
-	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_CURVE25519); 
-	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_SECP192K1); 
+	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_BP512R1);
+	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_CURVE25519);
+	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_SECP192K1);
 	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_SECP224K1);
-	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_SECP256K1); 
+	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_SECP256K1);
 	BIND_ENUM_CONSTANT(MBEDTLS_ECP_DP_CURVE448);
 
 
