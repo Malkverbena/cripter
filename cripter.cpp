@@ -1048,7 +1048,7 @@ PackedByteArray Cripter::pk_encrypt(const PackedByteArray plaintext, const Strin
 }
 
 
-PackedByteArray Cripter::pk_decrypt(PackedByteArray ciphertext, String p_private_key_path, String password){
+PackedByteArray Cripter::pk_decrypt(const PackedByteArray ciphertext, const String p_private_key_path, const String password){
 
 	const String key_path = ensure_global_path(p_private_key_path);
 	int mbedtls_erro;
@@ -1156,13 +1156,13 @@ PackedByteArray Cripter::generate_iv(const int iv_length, const String p_persona
 }
 
 
-String Cripter::derive_key_pbkdf2(const String p_password, const String p_salt, int iterations, int key_length) {
+String Cripter::derive_key_pbkdf2(const String p_password, const String p_salt, const int iterations, const int key_length) {
 	ERR_FAIL_COND_V_MSG(iterations <= 0, String(""), "Number of iterations must be positive.");
 	ERR_FAIL_COND_V_MSG(key_length <= 0, String(""), "Key size must be positive.");
 
 	const unsigned char *password = (const unsigned char *)(p_password.utf8().get_data());
 	const unsigned char *salt = (const unsigned char *)(p_salt.utf8().get_data());
-	unsigned char derived_key[key_length];
+	unsigned char* derived_key = (unsigned char*)malloc(key_length);
 	size_t password_len = p_password.utf8().size();
 	size_t salt_len = p_salt.utf8().size();
 
@@ -1173,6 +1173,7 @@ String Cripter::derive_key_pbkdf2(const String p_password, const String p_salt, 
 	}
 
 	String ret_derived_key = String((const char *)derived_key);
+	free(derived_key);
 	return ret_derived_key;
 }
 
@@ -1367,7 +1368,7 @@ void Cripter::_bind_methods(){
 
 	// AES
 	ClassDB::bind_static_method("Cripter", D_METHOD("aes_encrypt", "plaintext", "password", "iv_nonce", "algorith", "key_length"), &Cripter::aes_encrypt, DEFVAL(PackedByteArray()), DEFVAL(CBC), DEFVAL(BITS_256));
-	ClassDB::bind_static_method("Cripter", D_METHOD("aes_decrypt", "ciphertext", "password", "iv_nonce", "algorith", "key_length"), &Cripter::aes_encrypt, DEFVAL(PackedByteArray()), DEFVAL(CBC), DEFVAL(BITS_256));
+	ClassDB::bind_static_method("Cripter", D_METHOD("aes_decrypt", "ciphertext", "password", "iv_nonce", "algorith", "key_length"), &Cripter::aes_decrypt, DEFVAL(PackedByteArray()), DEFVAL(CBC), DEFVAL(BITS_256));
 	// Streaming IN
 	// Streaming OUT
 
@@ -1379,7 +1380,7 @@ void Cripter::_bind_methods(){
 
 
 	ClassDB::bind_static_method("Cripter", D_METHOD("pk_encrypt", "plaintext", "key_path"), &Cripter::pk_encrypt);
-	ClassDB::bind_static_method("Cripter", D_METHOD("pk_decrypt", "ciphertext", "key_path", "password"), &Cripter::pk_encrypt, DEFVAL(""));
+	ClassDB::bind_static_method("Cripter", D_METHOD("pk_decrypt", "ciphertext", "key_path", "password"), &Cripter::pk_decrypt, DEFVAL(""));
 
 	ClassDB::bind_static_method("Cripter", D_METHOD("pk_verify_signature", "private_key_path","data", "password"), &Cripter::pk_verify_signature, DEFVAL(""));
 	ClassDB::bind_static_method("Cripter", D_METHOD("pk_sign", "public_key_path","data", "password"), &Cripter::pk_sign, DEFVAL(""));

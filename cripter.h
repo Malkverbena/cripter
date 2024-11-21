@@ -98,8 +98,8 @@ public:
 
 private:
 
-	static constexpr u_int8_t TYPE_RSA = 0;
-	static constexpr u_int8_t TYPE_ECC = 1;
+	static constexpr int TYPE_RSA = 0;
+	static constexpr int TYPE_ECC = 1;
 
 	static size_t get_max_rsa_input_size(const mbedtls_pk_context *pk);
 
@@ -161,7 +161,7 @@ public:
 
 	static PackedByteArray generate_iv(const int iv_length, const String p_personalization);
 
-	static String derive_key_pbkdf2(const String p_password, const String p_salt, int iterations = 500, int key_length = 16);
+	static String derive_key_pbkdf2(const String p_password, const String p_salt, const int iterations = 500, const int key_length = 16);
 
 	static PackedStringArray get_available_curves();
 
@@ -248,16 +248,6 @@ public:
 	static PackedByteArray pk_sign(const String private_key_path, const PackedByteArray data, const String password = "");
 
 	static Variant pk_verify_signature(const String public_key_path, const PackedByteArray data, const String password = "");
-
-
-
-	// TODO ===============
-	// Create certificate?
-
-
-
-
-
 
 
 	Cripter();
