@@ -78,7 +78,6 @@ public:
 	enum Algorithm {
 		EBC,
 		CBC,
-		XTS,
 		CFB128,
 		CFB8,
 		OFB,
@@ -147,6 +146,20 @@ private:
 		Cripter::KeySize keybits,
 		int mode
 	);
+
+
+
+
+/*
+	struct aes_stream {
+		mbedtls_aes_xts_context aes;
+	};
+	
+
+	struct gcm_stream {
+		/* data */
+	};
+*/
 
 
 protected:

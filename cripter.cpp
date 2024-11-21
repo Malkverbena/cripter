@@ -56,7 +56,16 @@ PackedByteArray Cripter::_aes_crypt(PackedByteArray input, String password, Pack
 //std::vector<unsigned char> Cripter::_aes_crypt(std::vector<unsigned char> input, std::vector<unsigned char> password, std::vector<unsigned char> iv, Algorithm algorith, Cripter::KeySize keybits, int mode){
 
 
+	if ((keybits < BITS_128)){
+		WARN_PRINT("Most AES algorithms support 128,192 and 256 bits keys, with the exception of XTS, which only supports 256 and 512 bits keys. - Using 128 Bits key size");
+		keybits = BITS_128;
+	}
+	else if (keybits > BITS_256){
+		WARN_PRINT("Most AES algorithms support 128,192 and 256 bits keys, with the exception of XTS, which only supports 256 and 512 bits keys. - Using 256 Bits key size");
+		keybits = BITS_256;
+	}
 
+/*
 	if ((algorith != XTS) and (keybits < BITS_128)){
 		WARN_PRINT("Most AES algorithms support 128,192 and 256 bits keys, with the exception of XTS, which only supports 256 and 512 bits keys. - Using 128 Bits key size");
 		keybits = BITS_128;
@@ -65,6 +74,7 @@ PackedByteArray Cripter::_aes_crypt(PackedByteArray input, String password, Pack
 		WARN_PRINT("Most AES algorithms support 128,192 and 256 bits keys, with the exception of XTS, which only supports 256 and 512 bits keys. - Using 256 Bits key size");
 		keybits = BITS_256;
 	}
+
 	else if (algorith == XTS and keybits < BITS_256){
 		WARN_PRINT("XTS algorithm support only supports 256 and 512 bits keys. - Using 256 Bits key size");
 		keybits = BITS_256;
@@ -73,6 +83,7 @@ PackedByteArray Cripter::_aes_crypt(PackedByteArray input, String password, Pack
 		WARN_PRINT("XTS algorithm support only supports 256 and 512 bits keys. - Using 512 Bits key size");
 		keybits = BITS_512;
 	}
+*/
 
 	// std::vector<unsigned char> output;
 	PackedByteArray output;
@@ -95,7 +106,6 @@ PackedByteArray Cripter::_aes_crypt(PackedByteArray input, String password, Pack
 		WARN_PRINT(String("Failed to configure AES key.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
 		return output;
 	};
-
 
 
 	switch (algorith) {
@@ -129,8 +139,6 @@ PackedByteArray Cripter::_aes_crypt(PackedByteArray input, String password, Pack
 		//	memcpy(iv_copy, iv.data(), 16);
 
 			PackedByteArray iv_copy = iv.duplicate();
-
-
 
 			//mbedtls_erro = mbedtls_aes_crypt_cbc(&aes_ctx, mode, input.size(), iv_copy, input.data(), output.data());
 			mbedtls_erro = mbedtls_aes_crypt_cbc(&aes_ctx, mode, input.size(), iv_copy.ptrw(), input.ptr(), output.ptrw());
@@ -208,6 +216,23 @@ PackedByteArray Cripter::_aes_crypt(PackedByteArray input, String password, Pack
 			}
 			return output;
 
+		}
+		break;
+
+		case CTR: {
+			size_t nc_off = 0;
+			PackedByteArray nonce_counter = iv.duplicate();
+			PackedByteArray stream_block;
+			stream_block.resize(AES_BLOCK_SIZE);
+			stream_block.fill(0);
+
+			mbedtls_erro = mbedtls_aes_crypt_ctr(&aes_ctx, input.size(), &nc_off, nonce_counter.ptrw(), stream_block.ptrw(), input.ptr(), output.ptrw());
+			mbedtls_aes_free(&aes_ctx);
+			if (mbedtls_erro != OK){
+				String _err = mbed_error_msn(mbedtls_erro, "mbedtls_aes_crypt_ctr");
+				WARN_PRINT(String("CTR Encryption error: -0x%04x\n") + String::num_int64(-mbedtls_erro, 16) + _err);
+			}
+			return output;
 		}
 		break;
 
@@ -1248,9 +1273,11 @@ Error Cripter::add_pkcs7_padding(const std::vector<unsigned char>& data, std::ve
 
 
 PackedByteArray Cripter::add_pkcs7_padding(PackedByteArray data, const size_t block_size) {
+	PackedByteArray padded_data;
+
 	if (block_size == 4 || block_size > 255) {
 		WARN_PRINT("Invalid Padding");
-		return data;
+		return padded_data;
 	}
 
 	size_t data_length = data.size();
@@ -1259,8 +1286,7 @@ PackedByteArray Cripter::add_pkcs7_padding(PackedByteArray data, const size_t bl
 		padding_length = block_size;
 	}
 
-	PackedByteArray padded_data = data.duplicate();
-
+	padded_data = data.duplicate();
 	PackedByteArray padd;
 	padd.resize(padding_length);
 	padd.fill(padding_length);
@@ -1320,7 +1346,6 @@ size_t Cripter::get_max_rsa_input_size(const mbedtls_pk_context *pk) {
 	//int padding = rsa->padding;
 	const int *padding = &rsa->MBEDTLS_PRIVATE(padding);
 	const int *hash_id = &rsa->MBEDTLS_PRIVATE(hash_id);
-
 
 	size_t hash_len = 0;
 	switch (*hash_id) {
