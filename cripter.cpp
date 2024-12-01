@@ -332,30 +332,26 @@ Variant Cripter::_gcm_crypt(
 		ERR_FAIL_V_EDMSG(Dictionary(), String("Failed to configure GCM key.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
 	}
 
-	mbedtls_erro = mbedtls_gcm_crypt_and_tag(
-		&gcm_ctx, mode, input.size(),
-		iv.data(), iv.size(),
-		aad.data(), aad.size(),
-		input.data(), output.ptrw(),
-		GCM_TAG_SIZE, tag.data()
-	);
-
-	mbedtls_gcm_free(&gcm_ctx);
-
+	mbedtls_erro = mbedtls_gcm_crypt_and_tag(&gcm_ctx, mode, input.size(), iv.data(), iv.size(), aad.data(), aad.size(), input.data(), output.ptrw(), GCM_TAG_SIZE, tag.data());
 	if (mbedtls_erro != OK) {
 		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_gcm_crypt_and_tag");
 		ERR_FAIL_V_EDMSG(Dictionary(), String("Encryption error. : -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
 	}
 
+	mbedtls_gcm_free(&gcm_ctx);
+
 	PackedByteArray tag_array;
 	tag_array.resize(GCM_TAG_SIZE);
 	memcpy(tag_array.ptrw(), tag.data(), GCM_TAG_SIZE);
 
-	Dictionary ret;
-	ret["Tag"] = tag_array;
-	ret["Ciphertext"] = output;
-	return ret;
-
+	if (mode == MBEDTLS_GCM_ENCRYPT){
+		Dictionary ret;
+		ret["Tag"] = tag_array;
+		ret["Ciphertext"] = output;
+		return ret;
+	}else{
+		return output;
+	}
 }
 
 
