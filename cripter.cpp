@@ -651,8 +651,7 @@ Error Cripter::pk_generate_keys(
 	// Encrypt key
 	if (not password.is_empty()){
 		PackedByteArray iv = generate_iv(AES_GCM_BLOCK_SIZE, String("Encrypt PKey"));
-		String derivated_key = derive_key_pbkdf2(password, password.sha256_text());
-		pri_output_buf = _aes_crypt(pri_output_buf, derivated_key, iv, CBC, BITS_256, MBEDTLS_AES_ENCRYPT);
+		pri_output_buf = _aes_crypt(pri_output_buf, password, iv, CBC, BITS_256, MBEDTLS_AES_ENCRYPT);
 	}
 
 
@@ -1267,7 +1266,7 @@ PackedByteArray Cripter::pk_decrypt(const PackedByteArray ciphertext, const Stri
 PackedByteArray Cripter::generate_iv(const int iv_length, const String p_personalization) {
 
 	ERR_FAIL_COND_V_MSG(iv_length <= 0, PackedByteArray(), "Invalid IV length.");
-	ERR_FAIL_COND_V_MSG(p_personalization.is_empty(), PackedByteArray(), "The IV personalization string cannot be empty.");
+	//ERR_FAIL_COND_V_MSG(p_personalization.is_empty(), PackedByteArray(), "The IV personalization string cannot be empty.");
 
 	PackedByteArray iv;
 	iv.resize(iv_length);
@@ -1299,29 +1298,6 @@ PackedByteArray Cripter::generate_iv(const int iv_length, const String p_persona
 
 	return iv;
 }
-
-
-String Cripter::derive_key_pbkdf2(const String p_password, const String p_salt, const int iterations, const int key_length) {
-	ERR_FAIL_COND_V_MSG(iterations <= 0, String(""), "Number of iterations must be positive.");
-	ERR_FAIL_COND_V_MSG(key_length <= 0, String(""), "Key size must be positive.");
-
-	const unsigned char *password = (const unsigned char *)(p_password.utf8().get_data());
-	const unsigned char *salt = (const unsigned char *)(p_salt.utf8().get_data());
-	unsigned char* derived_key = (unsigned char*)malloc(key_length);
-	size_t password_len = p_password.utf8().size();
-	size_t salt_len = p_salt.utf8().size();
-
-	int mbedtls_erro = mbedtls_pkcs5_pbkdf2_hmac_ext(MBEDTLS_MD_SHA256, password, password_len, salt, salt_len, iterations, key_length, derived_key);
-	if (mbedtls_erro != OK) {
-		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_ctr_drbg_random");
-		ERR_FAIL_V_EDMSG(String(""),  String("Failed to generate IV: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
-	}
-
-	String ret_derived_key = String((const char *)derived_key);
-	free(derived_key);
-	return ret_derived_key;
-}
-
 
 
 // =============== HELPERS ===============
@@ -1499,7 +1475,6 @@ void Cripter::_bind_methods(){
 
 	// Utilities
 	ClassDB::bind_static_method("Cripter", D_METHOD("generate_iv", "iv length", "personalization"), &Cripter::generate_iv);
-	ClassDB::bind_static_method("Cripter", D_METHOD("derive_key_pbkdf2", "password", "salt", "iterations", "key_length"), &Cripter::derive_key_pbkdf2, DEFVAL(500), DEFVAL(16));
 	ClassDB::bind_static_method("Cripter", D_METHOD("get_available_curves"), &Cripter::get_available_curves);
 
 

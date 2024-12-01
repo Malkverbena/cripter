@@ -152,20 +152,17 @@ private:
 		int mode
 	);
 
-
-
-
-
+/*
 	struct aes_streamer {
 		mbedtls_aes_xts_context aes;
 	};
-
+*/
 
 	struct gcm_streamer {
 		mbedtls_gcm_context gcm_ctx;
 	};
 
-	aes_streamer *aes_stream = nullptr;
+	//aes_streamer *aes_stream = nullptr;
 
 	gcm_streamer *gcm_stream = nullptr;
 
@@ -193,8 +190,6 @@ public:
 	// Utilities ========================
 
 	static PackedByteArray generate_iv(const int iv_length, const String p_personalization);
-
-	static String derive_key_pbkdf2(const String p_password, const String p_salt, const int iterations = 500, const int key_length = 16);
 
 	static PackedStringArray get_available_curves();
 
