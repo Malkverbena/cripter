@@ -3,19 +3,22 @@
 #include "register_types.h"
 
 #include "core/object/class_db.h"
+
 #include "cripter.h"
-#include <thirdparty/mbedtls/include/mbedtls/error.h>
+
+
 
 void initialize_cripter_module(ModuleInitializationLevel p_level) {
-    if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
-            return;
-    }
-    ClassDB::register_class<Cripter>();
+	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
+			return;
+	}
+	GDREGISTER_CLASS(Cripter);
 }
 
 void uninitialize_cripter_module(ModuleInitializationLevel p_level) {
-    if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
-            return;
-    }
+	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
+			return;
+	}
 
 }
+

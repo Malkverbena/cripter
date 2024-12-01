@@ -1,29 +1,28 @@
 #!/usr/bin/env python
+#SCsub
 
-import version
+import os
+
+
 Import("env")
 Import("env_modules")
+
 env_cripter = env_modules.Clone()
 
-thirdparty_obj = []
-thirdparty_sources = ["error.c"]
-
-thirdparty_dir = "#thirdparty/mbedtls/library/"
-thirdparty_sources = [thirdparty_dir + file for file in thirdparty_sources]
 
 env_cripter.Prepend(CPPPATH=["#thirdparty/mbedtls/include/"])
-env_cripter.Append(CPPDEFINES=[("MBEDTLS_CONFIG_FILE", '\\"thirdparty/mbedtls/include/godot_module_mbedtls_config.h\\"')])
 
-env_thirdparty = env_cripter.Clone()
-env_thirdparty.disable_warnings()
-env_thirdparty.add_source_files(thirdparty_obj, thirdparty_sources)
-env_thirdparty.Depends(thirdparty_obj, "#thirdparty/mbedtls/include/godot_module_mbedtls_config.h")
-env.modules_sources += thirdparty_obj
-module_obj = []
 
-env_cripter.add_source_files(module_obj, "*.cpp")
-env.modules_sources += module_obj
-env.Depends(module_obj, thirdparty_obj)
+cripter_dir = os.path.abspath(str(Dir('.')))
+env_cripter.Append(CPPPATH=[cripter_dir])
 
-if version.major == 4:
-	env_cripter.Append(CPPDEFINES=["GD4"])
+
+#config_path = "mbedtls_cripter_config.h"
+
+config_path = "config_2.h"
+
+config_path = f"<{config_path}>" if env_cripter["ninja"] and env_cripter.msvc else f'\\"{config_path}\\"'
+env_cripter.Append(CPPDEFINES=[("MBEDTLS_CONFIG_FILE", config_path)])
+
+
+env_cripter.add_source_files(env.modules_sources, "*.cpp")

@@ -30,3 +30,23 @@
 *.exe
 *.out
 *.app
+
+
+# C/C++ generated
+*.a
+*.ax
+*.d
+*.dll
+*.lib
+*.lo
+*.o
+*.os
+*.ox
+*.Plo
+*.so
+
+# Local editor & project files.
+*.*[~]
+__pycache__/
+.vscode/
+/.godot
