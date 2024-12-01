@@ -1353,6 +1353,7 @@ String Cripter::mbed_error_msn(int mbedtls_erro, const char* p_function){
 }
 
 
+/*
 std::vector<unsigned char> Cripter::byteArray_to_vector(const PackedByteArray &p_packed_array) {
 	if (p_packed_array.is_empty()) {
 		return std::vector<unsigned char>();
@@ -1362,6 +1363,7 @@ std::vector<unsigned char> Cripter::byteArray_to_vector(const PackedByteArray &p
 	std::vector<unsigned char> byte_vector(data_ptr, data_ptr + data_size);
 	return byte_vector;
 }
+
 
 
 std::vector<unsigned char> Cripter::GDstring_to_STDvector(const String p_string) {
@@ -1375,6 +1377,9 @@ std::vector<unsigned char> Cripter::GDstring_to_STDvector(const String p_string)
 
 	return byte_vector;
 }
+
+*/
+
 
 
 Error Cripter::add_pkcs7_padding(const std::vector<unsigned char>& data, std::vector<unsigned char>& padded_data, const size_t block_size) {

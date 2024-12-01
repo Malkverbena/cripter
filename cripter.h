@@ -109,9 +109,9 @@ private:
 
 	static String ensure_global_path(String p_path);
 
-	static std::vector<unsigned char> GDstring_to_STDvector(const String p_string);
+//	static std::vector<unsigned char> GDstring_to_STDvector(const String p_string);
 
-	static std::vector<unsigned char> byteArray_to_vector(const PackedByteArray &p_packed_array);
+//	static std::vector<unsigned char> byteArray_to_vector(const PackedByteArray &p_packed_array);
 
 	static String mbed_error_msn(int mbedtls_erro, const char* p_function);
 
