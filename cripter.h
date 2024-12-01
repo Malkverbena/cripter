@@ -24,7 +24,7 @@
 #define MBEDTLS_ERROR_BUFFER_LENGTH 255
 
 #define GCM_TAG_SIZE 16
-#define AES_BLOCK_SIZE 16
+#define AES_GCM_BLOCK_SIZE 16
 #define HASH_SIZE_SHA_256 32
 #define EXPONENT 65537
 
@@ -61,6 +61,11 @@ class Cripter : public RefCounted{
 
 
 public:
+
+	enum CryptMode {
+		DECRYPT = 0,
+		ENCRYPT = 1
+	};
 
 	enum KeySize { // - Standard sizes for keys.
 		BITS_128 = 128,
@@ -123,7 +128,7 @@ private:
 		std::vector<unsigned char> iv,
 		std::vector<unsigned char> aad,
 		std::vector<unsigned char> tag,
-		Cripter::KeySize keybits, 
+		Cripter::KeySize keybits,
 		int mode
 	);
 
@@ -150,16 +155,20 @@ private:
 
 
 
-/*
-	struct aes_stream {
+
+	struct aes_streamer {
 		mbedtls_aes_xts_context aes;
 	};
-	
 
-	struct gcm_stream {
-		/* data */
+
+	struct gcm_streamer {
+		mbedtls_gcm_context gcm_ctx;
 	};
-*/
+
+	aes_streamer *aes_stream = nullptr;
+
+	gcm_streamer *gcm_stream = nullptr;
+
 
 
 protected:
@@ -169,6 +178,17 @@ protected:
 
 
 public:
+	// Streamming =======================
+
+//	Error aes_start_stream(const String password);
+//	Error aes_update_stream(const PackedByteArray data);
+//	Error aes_stop_stream();
+
+	Error gcm_start_stream(const String password, const PackedByteArray iv, const CryptMode mode, Cripter::KeySize keybits = BITS_256);
+	PackedByteArray gcm_update_stream(const PackedByteArray data, const bool in_chunk = false);
+	PackedByteArray gcm_stop_stream(PackedByteArray data); // return the tag
+
+
 
 	// Utilities ========================
 
@@ -251,7 +271,7 @@ public:
 	// Decrypt using RSA or EC.
 	static PackedByteArray pk_decrypt(
 		const PackedByteArray ciphertext,	// Buffer to decrypt.
-		const String p_private_key_path,		// The path to the key.
+		const String p_private_key_path,	// The path to the key.
 		const String password = ""			// The data to beencrypted.
 	);
 
@@ -273,16 +293,15 @@ public:
 
  // ENUMS CASTS ========================
 
+
+
+VARIANT_ENUM_CAST(Cripter::ECP_GROUP_ID);
+VARIANT_ENUM_CAST(Cripter::CURVE_TYPE);
 VARIANT_ENUM_CAST(Cripter::FileFormat);
 VARIANT_ENUM_CAST(Cripter::Algorithm);
+VARIANT_ENUM_CAST(Cripter::CryptMode);
 VARIANT_ENUM_CAST(Cripter::KeySize);
 VARIANT_ENUM_CAST(Cripter::PK_TYPE);
-VARIANT_ENUM_CAST(Cripter::CURVE_TYPE);
-VARIANT_ENUM_CAST(Cripter::ECP_GROUP_ID);
-
-
-
-
 
 
 #endif	// CRIPTER_H
