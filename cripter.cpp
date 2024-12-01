@@ -277,35 +277,41 @@ PackedByteArray Cripter::_aes_crypt(PackedByteArray input, String password, Pack
 // =============== GCM FUNCTION ===============
 
 
-Dictionary Cripter::gcm_encrypt(const PackedByteArray plaintext, const String p_password, const PackedByteArray p_iv, String p_aad, Cripter::KeySize keybits){
-	std::vector<unsigned char> password = GDstring_to_STDvector(p_password);
-	std::vector<unsigned char> input = byteArray_to_vector(plaintext);
-	std::vector<unsigned char> aad = GDstring_to_STDvector(p_aad);
-	std::vector<unsigned char> iv = byteArray_to_vector(p_iv);
-	std::vector<unsigned char> tag(GCM_TAG_SIZE);
-	Dictionary ret = _gcm_crypt(input, password, iv, aad, tag, keybits, MBEDTLS_GCM_ENCRYPT);
+Dictionary Cripter::gcm_encrypt(const PackedByteArray plaintext, const String password, const PackedByteArray iv, const String aad, Cripter::KeySize keybits){
+	//std::vector<unsigned char> password = GDstring_to_STDvector(p_password);
+	//std::vector<unsigned char> input = byteArray_to_vector(plaintext);
+	//std::vector<unsigned char> aad = GDstring_to_STDvector(p_aad);
+	//std::vector<unsigned char> iv = byteArray_to_vector(p_iv);
+	//std::vector<unsigned char> tag(GCM_TAG_SIZE);
+	//Dictionary ret = _gcm_crypt(input, password, iv, aad, tag, keybits, MBEDTLS_GCM_ENCRYPT);
+	//return ret;
+
+	Dictionary ret = _gcm_crypt(plaintext, password, iv, aad, PackedByteArray(), keybits, MBEDTLS_GCM_ENCRYPT);
 	return ret;
 }
 
 
 
-PackedByteArray Cripter::gcm_decrypt(const PackedByteArray ciphertext, const String p_password, const PackedByteArray p_iv, const PackedByteArray p_tag, String p_aad,	Cripter::KeySize keybits){
-	ERR_FAIL_COND_V_MSG(p_tag.size() != 16, PackedByteArray(), "Tags for GCM encryption must have the default value of 16.");
-	std::vector<unsigned char> password = GDstring_to_STDvector(p_password);
-	std::vector<unsigned char> input = byteArray_to_vector(ciphertext);
-	std::vector<unsigned char> aad = GDstring_to_STDvector(p_aad);
-	std::vector<unsigned char> tag = byteArray_to_vector(p_tag);
-	std::vector<unsigned char> iv = byteArray_to_vector(p_iv);
-	PackedByteArray ret = _gcm_crypt(input, password, iv, aad, tag, keybits, MBEDTLS_GCM_DECRYPT);
+PackedByteArray Cripter::gcm_decrypt(const PackedByteArray ciphertext, const String password, const PackedByteArray iv, const PackedByteArray tag, const String aad, Cripter::KeySize keybits){
+	//ERR_FAIL_COND_V_MSG(p_tag.size() != 16, PackedByteArray(), "Tags for GCM encryption must have the default value of 16.");
+	//std::vector<unsigned char> password = GDstring_to_STDvector(p_password);
+	//std::vector<unsigned char> input = byteArray_to_vector(ciphertext);
+	//std::vector<unsigned char> aad = GDstring_to_STDvector(p_aad);
+	//std::vector<unsigned char> tag = byteArray_to_vector(p_tag);
+	//std::vector<unsigned char> iv = byteArray_to_vector(p_iv);
+	//PackedByteArray ret = _gcm_crypt(input, password, iv, aad, tag, keybits, MBEDTLS_GCM_DECRYPT);
+	//return ret;
+
+	PackedByteArray ret = _gcm_crypt(ciphertext, password, iv, aad, tag, keybits, MBEDTLS_GCM_DECRYPT);
 	return ret;
 }
 
 Variant Cripter::_gcm_crypt(
-	std::vector<unsigned char> input,
-	std::vector<unsigned char> password,
-	std::vector<unsigned char> iv,
-	std::vector<unsigned char> aad,
-	std::vector<unsigned char> tag,
+	const PackedByteArray input,
+	const String password,
+	const PackedByteArray iv,
+	const String aad,
+	PackedByteArray tag,
 	Cripter::KeySize keybits,
 	int mode
 	){
@@ -325,14 +331,24 @@ Variant Cripter::_gcm_crypt(
 	PackedByteArray output;
 	output.resize(input.size());
 
-	int mbedtls_erro = mbedtls_gcm_setkey(&gcm_ctx, MBEDTLS_CIPHER_ID_AES, password.data(), keybits);
+
+	int mbedtls_erro = mbedtls_gcm_setkey(&gcm_ctx, MBEDTLS_CIPHER_ID_AES, reinterpret_cast<const unsigned char *>(password.utf8().get_data()), keybits);
 	if (mbedtls_erro != OK) {
 		mbedtls_gcm_free(&gcm_ctx);
 		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_gcm_setkey");
 		ERR_FAIL_V_EDMSG(Dictionary(), String("Failed to configure GCM key.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
 	}
 
-	mbedtls_erro = mbedtls_gcm_crypt_and_tag(&gcm_ctx, mode, input.size(), iv.data(), iv.size(), aad.data(), aad.size(), input.data(), output.ptrw(), GCM_TAG_SIZE, tag.data());
+	mbedtls_erro = mbedtls_gcm_crypt_and_tag(
+		&gcm_ctx, 
+		mode, input.size(), 
+		iv.ptr(), iv.size(), 
+		reinterpret_cast<const unsigned char *>(aad.utf8().get_data()),
+		aad.size(), input.ptr(), 
+		output.ptrw(), 
+		GCM_TAG_SIZE, 
+		tag.ptrw()
+	);
 	if (mbedtls_erro != OK) {
 		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_gcm_crypt_and_tag");
 		ERR_FAIL_V_EDMSG(Dictionary(), String("Encryption error. : -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
@@ -340,6 +356,19 @@ Variant Cripter::_gcm_crypt(
 
 	mbedtls_gcm_free(&gcm_ctx);
 
+
+
+	if (mode == MBEDTLS_GCM_ENCRYPT){
+		Dictionary ret;
+		ret["Tag"] = tag;
+		ret["Ciphertext"] = output;
+		return ret;
+	}else{
+		return output;
+	}
+
+
+/*
 	PackedByteArray tag_array;
 	tag_array.resize(GCM_TAG_SIZE);
 	memcpy(tag_array.ptrw(), tag.data(), GCM_TAG_SIZE);
@@ -352,6 +381,8 @@ Variant Cripter::_gcm_crypt(
 	}else{
 		return output;
 	}
+*/
+
 }
 
 
@@ -1058,7 +1089,7 @@ PackedByteArray Cripter::pk_sign(const String private_key_path, const PackedByte
 
 
 
-Variant Cripter::pk_verify_signature(const String public_key_path, const PackedByteArray data, const String password){
+Variant Cripter::pk_verify_signature(const String public_key_path, const PackedByteArray data){
 
 	int mbedtls_erro;
 	PackedByteArray signature;
@@ -1499,7 +1530,7 @@ void Cripter::_bind_methods(){
 	ClassDB::bind_static_method("Cripter", D_METHOD("pk_encrypt", "plaintext", "key_path"), &Cripter::pk_encrypt);
 	ClassDB::bind_static_method("Cripter", D_METHOD("pk_decrypt", "ciphertext", "key_path", "password"), &Cripter::pk_decrypt, DEFVAL(""));
 
-	ClassDB::bind_static_method("Cripter", D_METHOD("pk_verify_signature", "private_key_path","data", "password"), &Cripter::pk_verify_signature, DEFVAL(""));
+	ClassDB::bind_static_method("Cripter", D_METHOD("pk_verify_signature", "private_key_path","data"), &Cripter::pk_verify_signature);
 	ClassDB::bind_static_method("Cripter", D_METHOD("pk_sign", "public_key_path","data", "password"), &Cripter::pk_sign, DEFVAL(""));
 
 

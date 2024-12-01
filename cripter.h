@@ -123,11 +123,11 @@ private:
 
 
 	static Variant _gcm_crypt(
-		std::vector<unsigned char> input,
-		std::vector<unsigned char> password,
-		std::vector<unsigned char> iv,
-		std::vector<unsigned char> aad,
-		std::vector<unsigned char> tag,
+		const PackedByteArray input,
+		const String password,
+		const PackedByteArray iv,
+		const String aad,
+		PackedByteArray tag,
 		Cripter::KeySize keybits,
 		int mode
 	);
@@ -219,18 +219,18 @@ public:
 
 	static Dictionary gcm_encrypt(
 		const PackedByteArray plaintext,
-		const String p_password,
-		const PackedByteArray p_iv,
-		String p_aad = "",
+		const String password,
+		const PackedByteArray iv,
+		const String aad = "",
 		Cripter::KeySize keybits = BITS_256
 	);
 
 	static PackedByteArray gcm_decrypt(
 		const PackedByteArray ciphertext,
-		const String p_password,
-		const PackedByteArray p_iv,
-		const PackedByteArray p_tag,
-		const String p_aad,
+		const String password,
+		const PackedByteArray iv,
+		const PackedByteArray tag,
+		const String aad,
 		Cripter::KeySize keybits = BITS_256
 	);
 
@@ -275,7 +275,7 @@ public:
 
 	static PackedByteArray pk_sign(const String private_key_path, const PackedByteArray data, const String password = "");
 
-	static Variant pk_verify_signature(const String public_key_path, const PackedByteArray data, const String password = "");
+	static Variant pk_verify_signature(const String public_key_path, const PackedByteArray data);
 
 
 	Cripter();
