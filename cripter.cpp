@@ -277,7 +277,7 @@ PackedByteArray Cripter::_aes_crypt(PackedByteArray input, String password, Pack
 // =============== GCM FUNCTION ===============
 
 
-Dictionary Cripter::gcm_encrypt(const PackedByteArray plaintext, const String password, const PackedByteArray iv, const String aad, Cripter::KeySize keybits){
+Dictionary Cripter::gcm_encrypt(const PackedByteArray plaintext, const String p_password, const PackedByteArray iv, const String p_aad, Cripter::KeySize keybits){
 	//std::vector<unsigned char> password = GDstring_to_STDvector(p_password);
 	//std::vector<unsigned char> input = byteArray_to_vector(plaintext);
 	//std::vector<unsigned char> aad = GDstring_to_STDvector(p_aad);
@@ -286,13 +286,16 @@ Dictionary Cripter::gcm_encrypt(const PackedByteArray plaintext, const String pa
 	//Dictionary ret = _gcm_crypt(input, password, iv, aad, tag, keybits, MBEDTLS_GCM_ENCRYPT);
 	//return ret;
 
-	Dictionary ret = _gcm_crypt(plaintext, password, iv, aad, PackedByteArray(), keybits, MBEDTLS_GCM_ENCRYPT);
+	ERR_FAIL_COND_V_EDMSG(iv.size() != GCM_TAG_SIZE, Dictionary(), "IV must have 16 Bytes.");
+	PackedByteArray tag;
+	tag.resize(GCM_TAG_SIZE);
+	Dictionary ret = _gcm_crypt(plaintext, p_password, iv, p_aad, tag, keybits, MBEDTLS_GCM_ENCRYPT);
 	return ret;
 }
 
 
 
-PackedByteArray Cripter::gcm_decrypt(const PackedByteArray ciphertext, const String password, const PackedByteArray iv, const PackedByteArray tag, const String aad, Cripter::KeySize keybits){
+PackedByteArray Cripter::gcm_decrypt(const PackedByteArray ciphertext, const String p_password, const PackedByteArray iv, const PackedByteArray tag, const String p_aad, Cripter::KeySize keybits){
 	//ERR_FAIL_COND_V_MSG(p_tag.size() != 16, PackedByteArray(), "Tags for GCM encryption must have the default value of 16.");
 	//std::vector<unsigned char> password = GDstring_to_STDvector(p_password);
 	//std::vector<unsigned char> input = byteArray_to_vector(ciphertext);
@@ -302,16 +305,18 @@ PackedByteArray Cripter::gcm_decrypt(const PackedByteArray ciphertext, const Str
 	//PackedByteArray ret = _gcm_crypt(input, password, iv, aad, tag, keybits, MBEDTLS_GCM_DECRYPT);
 	//return ret;
 
-	PackedByteArray ret = _gcm_crypt(ciphertext, password, iv, aad, tag, keybits, MBEDTLS_GCM_DECRYPT);
+	ERR_FAIL_COND_V_EDMSG(iv.size() != GCM_TAG_SIZE, PackedByteArray(), "IV must have 16 Bytes.");
+	ERR_FAIL_COND_V_EDMSG(tag.size() != GCM_TAG_SIZE, PackedByteArray(), "TAG must have 16 Bytes.");
+	PackedByteArray ret = _gcm_crypt(ciphertext, p_password, iv, p_aad, tag, keybits, MBEDTLS_GCM_DECRYPT);
 	return ret;
 }
 
 Variant Cripter::_gcm_crypt(
 	const PackedByteArray input,
-	const String password,
+	const String p_password,
 	const PackedByteArray iv,
-	const String aad,
-	PackedByteArray tag,
+	const String p_aad,
+	PackedByteArray p_tag,
 	Cripter::KeySize keybits,
 	int mode
 	){
@@ -331,8 +336,11 @@ Variant Cripter::_gcm_crypt(
 	PackedByteArray output;
 	output.resize(input.size());
 
+	int mbedtls_erro;
+	const unsigned char * password = reinterpret_cast<const unsigned char *>(p_password.utf8().get_data());
+	const unsigned char * aad = reinterpret_cast<const unsigned char *>(p_aad.utf8().get_data());
 
-	int mbedtls_erro = mbedtls_gcm_setkey(&gcm_ctx, MBEDTLS_CIPHER_ID_AES, reinterpret_cast<const unsigned char *>(password.utf8().get_data()), keybits);
+	mbedtls_erro = mbedtls_gcm_setkey(&gcm_ctx, MBEDTLS_CIPHER_ID_AES, password, keybits);
 	if (mbedtls_erro != OK) {
 		mbedtls_gcm_free(&gcm_ctx);
 		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_gcm_setkey");
@@ -340,15 +348,19 @@ Variant Cripter::_gcm_crypt(
 	}
 
 	mbedtls_erro = mbedtls_gcm_crypt_and_tag(
-		&gcm_ctx, 
-		mode, input.size(), 
-		iv.ptr(), iv.size(), 
-		reinterpret_cast<const unsigned char *>(aad.utf8().get_data()),
-		aad.size(), input.ptr(), 
-		output.ptrw(), 
-		GCM_TAG_SIZE, 
-		tag.ptrw()
+		&gcm_ctx,
+		mode,
+		input.size(),
+		iv.ptr(),
+		iv.size(),
+		aad,
+		sizeof(aad),
+		input.ptr(),
+		output.ptrw(),
+		GCM_TAG_SIZE,
+		p_tag.ptrw()
 	);
+
 	if (mbedtls_erro != OK) {
 		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_gcm_crypt_and_tag");
 		ERR_FAIL_V_EDMSG(Dictionary(), String("Encryption error. : -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
@@ -359,8 +371,13 @@ Variant Cripter::_gcm_crypt(
 
 
 	if (mode == MBEDTLS_GCM_ENCRYPT){
+
+		//PackedByteArray tag_array;
+		//tag_array.resize(GCM_TAG_SIZE);
+		//memcpy(tag_array.ptrw(), tag.data(), GCM_TAG_SIZE);
+
 		Dictionary ret;
-		ret["Tag"] = tag;
+		ret["Tag"] = p_tag;
 		ret["Ciphertext"] = output;
 		return ret;
 	}else{
@@ -389,7 +406,14 @@ Variant Cripter::_gcm_crypt(
 // Stream
 
 
+
+
 Error Cripter::gcm_start_stream(const String password, const PackedByteArray iv, const CryptMode mode, Cripter::KeySize keybits){
+
+
+	ERR_FAIL_COND_V_EDMSG(iv.size() != GCM_TAG_SIZE, ERR_PARAMETER_RANGE_ERROR, "IV must have 16 Bytes.");
+
+	// Clean up existing stream
 
 	if (gcm_stream != nullptr){
 		mbedtls_gcm_free(&gcm_stream->gcm_ctx);
@@ -433,44 +457,44 @@ Error Cripter::gcm_start_stream(const String password, const PackedByteArray iv,
 }
 
 
-PackedByteArray Cripter::gcm_update_stream(const PackedByteArray data, const bool in_chunk){
+PackedByteArray Cripter::gcm_update_stream(const PackedByteArray data, const bool in_chunk) {
 
-	PackedByteArray output;
 	int mbedtls_erro;
 	size_t plaintext_len = data.size();
-	output.resize(plaintext_len + AES_GCM_BLOCK_SIZE);
-	size_t output_len = 0;
 
-	if (in_chunk){
+	PackedByteArray output;
+	output.resize(plaintext_len); // O tamanho do output é igual ao input para GCM
 
+	size_t output_length = 0;
 
-		size_t chunk_size = AES_GCM_BLOCK_SIZE;
+	if (in_chunk) {
+		size_t chunk_size = 16; // Tamanho típico de bloco
 		size_t offset = 0;
-
 		while (offset < plaintext_len) {
-			size_t len = (plaintext_len - offset > chunk_size) ? chunk_size : (plaintext_len - offset);
+			size_t len = MIN(chunk_size, plaintext_len - offset);
+			size_t chunk_output_length = 0;
 
-			mbedtls_erro = mbedtls_gcm_update(
-				&gcm_stream->gcm_ctx,
-				data.ptr() + offset, len,
-				output.ptrw() + offset,
-				offset,
-				&output_len
-			);
-
-			if (mbedtls_erro != OK) {
+			mbedtls_erro = mbedtls_gcm_update(&gcm_stream->gcm_ctx, data.ptr() + offset, len, output.ptrw() + offset, len, &chunk_output_length);
+			if (mbedtls_erro != 0) {
 				String _err = mbed_error_msn(mbedtls_erro, "mbedtls_gcm_update");
-				ERR_FAIL_V_EDMSG(PackedByteArray(), String("Failed to perform GCM stream operation.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+				ERR_FAIL_V_EDMSG(PackedByteArray(), String("Falha durante GCM update: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
 			}
+
+			if (chunk_output_length != len) {
+				ERR_FAIL_V_EDMSG(PackedByteArray(), "Tamanho de saída inesperado em mbedtls_gcm_update");
+			}
+
 			offset += len;
-	}
-
-	}else{
-
-		mbedtls_erro = mbedtls_gcm_update(&gcm_stream->gcm_ctx, data.ptr(), plaintext_len, output.ptrw(), plaintext_len, &plaintext_len);
-		if (mbedtls_erro != OK) {
+		}
+	} else {
+		mbedtls_erro = mbedtls_gcm_update(&gcm_stream->gcm_ctx, data.ptr(), plaintext_len, output.ptrw(), plaintext_len, &output_length);
+		if (mbedtls_erro != 0) {
 			String _err = mbed_error_msn(mbedtls_erro, "mbedtls_gcm_update");
-			ERR_FAIL_V_EDMSG(PackedByteArray(), String("Failed to perform GCM stream operation.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+			ERR_FAIL_V_EDMSG(PackedByteArray(), String("Falha durante GCM update: -0x") + String::num_int64(-mbedtls_erro, 16) + _err);
+		}
+
+		if (output_length != plaintext_len) {
+			ERR_FAIL_V_EDMSG(PackedByteArray(), "Tamanho de saída inesperado em mbedtls_gcm_update");
 		}
 	}
 
@@ -478,13 +502,14 @@ PackedByteArray Cripter::gcm_update_stream(const PackedByteArray data, const boo
 }
 
 
-PackedByteArray Cripter::gcm_stop_stream(PackedByteArray data){
+PackedByteArray Cripter::gcm_stop_stream(PackedByteArray data, PackedByteArray tag){
 
-	PackedByteArray tag;
-	tag.resize(GCM_TAG_SIZE);
+	if (tag.size() != 16){
+		tag.resize(GCM_TAG_SIZE);
+	}
 	size_t tag_size = GCM_TAG_SIZE;
 
-	int mbedtls_erro = mbedtls_gcm_finish(&gcm_stream->gcm_ctx, data.ptrw(), (size_t)data.size(), &tag_size, tag.ptrw(), tag.size());
+	int mbedtls_erro = mbedtls_gcm_finish(&gcm_stream->gcm_ctx, data.ptrw(), (size_t)data.size(), &tag_size, tag.ptrw(), tag_size);
 	if(mbedtls_erro != OK){
 		String _err = mbed_error_msn(mbedtls_erro, "mbedtls_gcm_update");
 		String err_msn = String("Failed to perform GCM stream operation.: -0x") + String::num_int64(-mbedtls_erro, 16) + _err;
@@ -496,10 +521,6 @@ PackedByteArray Cripter::gcm_stop_stream(PackedByteArray data){
 	gcm_stream = nullptr;
 	return tag;
 }
-
-
-
-
 
 
 
@@ -1515,17 +1536,14 @@ void Cripter::_bind_methods(){
 	ClassDB::bind_static_method("Cripter", D_METHOD("gcm_decrypt", "ciphertext", "password", "iv", "tag", "aad", "key_length"), &Cripter::gcm_decrypt, DEFVAL(BITS_256));
 
 	ClassDB::bind_method(D_METHOD("gcm_start_stream", "password", "iv", "mode", "keybits"), &Cripter::gcm_start_stream, DEFVAL(BITS_256));
-	ClassDB::bind_method(D_METHOD("gcm_update_stream", "data", "in_chunk"), &Cripter::gcm_update_stream);
-	ClassDB::bind_method(D_METHOD("gcm_stop_stream", "final_data"), &Cripter::gcm_stop_stream);
+	ClassDB::bind_method(D_METHOD("gcm_update_stream", "data", "in_chunk"), &Cripter::gcm_update_stream, DEFVAL(false));
+	ClassDB::bind_method(D_METHOD("gcm_stop_stream", "final_data", "tag"), &Cripter::gcm_stop_stream, DEFVAL(PackedByteArray()));
 
 
 	// AES
 	ClassDB::bind_static_method("Cripter", D_METHOD("aes_encrypt", "plaintext", "password", "iv_nonce", "algorith", "key_length"), &Cripter::aes_encrypt, DEFVAL(PackedByteArray()), DEFVAL(CBC), DEFVAL(BITS_256));
 	ClassDB::bind_static_method("Cripter", D_METHOD("aes_decrypt", "ciphertext", "password", "iv_nonce", "algorith", "key_length"), &Cripter::aes_decrypt, DEFVAL(PackedByteArray()), DEFVAL(CBC), DEFVAL(BITS_256));
 
-//	ClassDB::bind_method(D_METHOD("aes_start_stream"), &Cripter::aes_start_stream);
-//	ClassDB::bind_method(D_METHOD("aes_update_stream"), &Cripter::aes_update_stream);
-//	ClassDB::bind_method(D_METHOD("aes_stop_stream"), &Cripter::aes_stop_stream);
 
 	// PK
 	ClassDB::bind_static_method("Cripter",D_METHOD("pk_generate_keys", "algorithm_type", "key_size", "curve_name", "storage_format", "password", "private_key_filename", "public_key_filename", "personalization"), &Cripter::pk_generate_keys, DEFVAL("key_generation"));

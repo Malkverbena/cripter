@@ -20,14 +20,7 @@
 #define CRIPTER_H
 
 
-#define MBEDTLS_ERROR_C
-#define MBEDTLS_ERROR_BUFFER_LENGTH 255
-
-#define GCM_TAG_SIZE 16
-#define AES_GCM_BLOCK_SIZE 16
-#define HASH_SIZE_SHA_256 32
-#define EXPONENT 65537
-
+//#define MBEDTLS_ERROR_C
 
 
 #include "core/config/project_settings.h"
@@ -53,6 +46,14 @@
 #include <string>
 #include <map>
 
+
+#define MBEDTLS_ERROR_BUFFER_LENGTH 255
+
+#define GCM_TAG_SIZE 16
+#define AES_GCM_BLOCK_SIZE 16
+
+#define HASH_SIZE_SHA_256 32
+#define EXPONENT 65537
 
 
 
@@ -124,10 +125,10 @@ private:
 
 	static Variant _gcm_crypt(
 		const PackedByteArray input,
-		const String password,
+		const String p_password,
 		const PackedByteArray iv,
-		const String aad,
-		PackedByteArray tag,
+		const String p_aad,
+		PackedByteArray p_tag,
 		Cripter::KeySize keybits,
 		int mode
 	);
@@ -181,9 +182,6 @@ public:
 //	Error aes_update_stream(const PackedByteArray data);
 //	Error aes_stop_stream();
 
-	Error gcm_start_stream(const String password, const PackedByteArray iv, const CryptMode mode, Cripter::KeySize keybits = BITS_256);
-	PackedByteArray gcm_update_stream(const PackedByteArray data, const bool in_chunk = false);
-	PackedByteArray gcm_stop_stream(PackedByteArray data); // return the tag
 
 
 
@@ -218,21 +216,34 @@ public:
 	// GCM ========================
 
 	static Dictionary gcm_encrypt(
-		const PackedByteArray plaintext,
-		const String password,
-		const PackedByteArray iv,
-		const String aad = "",
+		const PackedByteArray plaintext, 
+		const String p_password, 
+		const PackedByteArray iv, 
+		const String p_aad = "", 
 		Cripter::KeySize keybits = BITS_256
 	);
 
 	static PackedByteArray gcm_decrypt(
-		const PackedByteArray ciphertext,
-		const String password,
-		const PackedByteArray iv,
-		const PackedByteArray tag,
-		const String aad,
+		const PackedByteArray ciphertext, 
+		const String p_password, 
+		const PackedByteArray iv, 
+		const PackedByteArray tag, 
+		const String p_aad, 
 		Cripter::KeySize keybits = BITS_256
 	);
+
+	Error gcm_start_stream(
+		const String password, 
+		const PackedByteArray iv, 
+		const CryptMode mode, 
+		Cripter::KeySize keybits = BITS_256
+	);
+
+	PackedByteArray gcm_update_stream(const PackedByteArray data, const bool in_chunk = false);
+	PackedByteArray gcm_stop_stream(PackedByteArray data, PackedByteArray tag = PackedByteArray()); // return the tag
+
+
+
 
 	// TODO ===============
 	// Stream Start-Update-Stop
